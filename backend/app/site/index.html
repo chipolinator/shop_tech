@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ShopTech</title>
+  <link rel="stylesheet" href="/site/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="container">
+      <p class="brand">ShopTech</p>
+    </div>
+  </header>
+
+  <main>
+    <section class="container hero">
+      <div class="hero-text">
+        <h1>Регистрация в ShopTech</h1>
+        <p class="subtitle">
+          Для доступа к каталогу создайте аккаунт.
+        </p>
+      </div>
+
+      <div class="card" id="signup">
+        <h2>Создать аккаунт</h2>
+        <form id="register-form" class="register-form" novalidate>
+          <label for="name">Имя</label>
+          <input id="name" name="name" type="text" placeholder="Введите имя" required>
+
+          <label for="password">Пароль</label>
+          <input id="password" name="password" type="password" placeholder="Минимум 6 символов" required minlength="6">
+
+          <button type="submit">Зарегистрироваться</button>
+          <p id="form-status" role="status" aria-live="polite"></p>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>Выполнила команда Monopoliki</p>
+  </footer>
+
+  <script src="/site/app.js"></script>
+</body>
+</html>
