@@ -13,8 +13,9 @@ app = FastAPI(
     title=settings.APP_NAME
 )
 
-BASE_DIR = Path(__file__).resolve().parent
-SITE_DIR = BASE_DIR / "site"
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+FRONTEND_DIR = PROJECT_ROOT / "frontend"
+STATIC_DIR = FRONTEND_DIR / "static"
 
 
 @app.on_event("startup")
@@ -23,12 +24,12 @@ def on_startup():
 
 
 app.include_router(router.router, prefix="/api")
-app.mount("/site", StaticFiles(directory=SITE_DIR), name="site")
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 
 @app.get("/")
 async def home():
-    return FileResponse(SITE_DIR / "index.html")
+    return FileResponse(FRONTEND_DIR / "index.html")
 
 if __name__ == "__main__":
     uvicorn.run(app, host=settings.HOST, port=settings.PORT)
