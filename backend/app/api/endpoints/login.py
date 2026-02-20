@@ -11,28 +11,6 @@ router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/reg/token")
 
 
-async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-    try:
-        payload = jwt.decode(token, settings.SECRET_KEY,
-                             algorithms=[settings.ALGORITHM])
-        username = payload.get("sub")
-        if username is None:
-            raise credentials_exception
-    except InvalidTokenError:
-        raise credentials_exception
-
-    user_obj = get_user_by_name(username)
-    if user_obj is None:
-        raise credentials_exception
-    print(user_obj)
-    return user_obj
-
-
 @router.post("/reg_user",  status_code=200)
 async def reg_user(user: user.UserCreate):
     exists = user_exists(user.name)
