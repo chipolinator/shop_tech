@@ -3,6 +3,7 @@ from config import settings
 import models
 from schemas.user import User as UserDB
 from schemas.admin import Admin
+from schemas.car import Car
 import utils.security
 
 
@@ -38,7 +39,12 @@ def get_user_by_name(name: str):
         result = session.execute(statement).scalar_one_or_none()
         return result
 
-
+def add_car_db(car : Car ):
+    with Session(engine) as session:
+        session.add(car)
+        session.commit()
+        session.refresh(car)
+        return car
 def create_admin(name: str, password: str):
     with Session(engine) as session:
         statement = select(Admin).where(Admin.username == name)
