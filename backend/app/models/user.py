@@ -14,3 +14,13 @@ class UserCreateResponse(BaseModel):
 class UserLogin(BaseModel):
     name: str
     password: str
+
+
+class UserLoginResponse(BaseModel):
+    name: str
+    password: str
+
+
+class User(BaseModel):
+    name: str
+    password: str

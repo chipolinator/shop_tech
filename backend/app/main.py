@@ -11,6 +11,7 @@ app = FastAPI(
 @app.on_event("startup")
 def on_startup():
     database.create_db_and_tables()
+    database.create_admin(settings.ADMIN_NAME, settings.ADMIN_PASSWORD_HASH)
 
 
 app.include_router(router.router, prefix="/api")

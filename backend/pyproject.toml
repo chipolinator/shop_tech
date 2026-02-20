@@ -10,6 +10,7 @@ dependencies = [
     "passlib>=1.7.4",
     "pydantic-settings>=2.13.0",
     "pyjwt>=2.11.0",
+    "python-multipart>=0.0.22",
     "sqlmodel>=0.0.34",
     "uvicorn>=0.41.0",
 ]
