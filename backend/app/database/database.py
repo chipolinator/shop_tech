@@ -33,18 +33,27 @@ def user_exists(name: str):
         return result is not None
 
 
-def get_user_by_name(name: str): 
+def get_user_by_name(name: str):
     with Session(engine) as session:
         statement = select(UserDB).where(UserDB.username == name)
         result = session.execute(statement).scalar_one_or_none()
         return result
 
-def add_car_db(car : Car ):
+
+def add_car_db(car: Car):
     with Session(engine) as session:
         session.add(car)
         session.commit()
         session.refresh(car)
         return car
+
+
+def get_cars():
+    with Session(engine) as session:
+        cars = session.exec(select(Car)).all()
+        return cars
+
+
 def create_admin(name: str, password: str):
     with Session(engine) as session:
         statement = select(Admin).where(Admin.username == name)
