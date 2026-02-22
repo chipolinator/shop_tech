@@ -1,10 +1,11 @@
 const form = document.getElementById("register-form");
 const status = document.getElementById("form-status");
 const button = form.querySelector("button[type='submit']");
+const API_BASE = `${window.location.protocol}//${window.location.hostname}:8000/api`;
 
 function setStatus(text, type = "") {
   status.textContent = text;
-  status.className = type;
+  status.className = type ? `status-line ${type}` : "status-line";
 }
 
 function validate(name, password) {
@@ -13,8 +14,9 @@ function validate(name, password) {
   return "";
 }
 
+
 async function registerUser(name, password) {
-  const response = await fetch("/api/reg/reg_user", {
+  const response = await fetch(`${API_BASE}/reg/reg_user`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name, password }),
@@ -23,7 +25,7 @@ async function registerUser(name, password) {
   if (response.ok) return { ok: true };
 
   const data = await response.json().catch(() => null);
-  const detail = data?.detail ? `: ${data.detail}` : "";
+  const detail = data?.detail ? `: ${data.detail}` : ` (HTTP ${response.status})`;
   return { ok: false, message: `Ошибка регистрации${detail}` };
 }
 
