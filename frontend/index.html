@@ -3,22 +3,28 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ShopTech</title>
+  <title>ShopTech | Регистрация</title>
   <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
   <header class="topbar">
-    <div class="container">
-      <p class="brand">ShopTech</p>
+    <div class="container topbar-inner">
+      <p class="brand">ShopTech API Demo</p>
+      <nav class="nav-links" aria-label="Навигация">
+        <a class="nav-link active" href="/index.html">Регистрация</a>
+        <a class="nav-link" href="/user.html">Вход</a>
+        <a class="nav-link" href="/cars.html">Машины</a>
+        <a class="nav-link" href="/admin.html">Админ</a>
+      </nav>
     </div>
   </header>
 
-  <main>
+  <main class="page-main">
     <section class="container hero">
       <div class="hero-text">
-        <h1>Регистрация в ShopTech</h1>
+        <h1>Регистрация нового пользователя</h1>
         <p class="subtitle">
-          Для доступа к каталогу создайте аккаунт.
+          Создайте аккаунт, затем используйте остальные разделы в верхнем меню.
         </p>
       </div>
 
@@ -32,7 +38,7 @@
           <input id="password" name="password" type="password" placeholder="Минимум 6 символов" required minlength="6">
 
           <button type="submit">Зарегистрироваться</button>
-          <p id="form-status" role="status" aria-live="polite"></p>
+          <p id="form-status" class="status-line" role="status" aria-live="polite"></p>
         </form>
       </div>
     </section>

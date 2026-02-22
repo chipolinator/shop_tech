@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ShopTech | Машины</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <p class="brand">ShopTech API Demo</p>
+      <nav class="nav-links" aria-label="Навигация">
+        <a class="nav-link" href="/index.html">Регистрация</a>
+        <a class="nav-link" href="/user.html">Вход</a>
+        <a class="nav-link active" href="/cars.html">Машины</a>
+        <a class="nav-link" href="/admin.html">Админ</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page-main">
+    <section class="container">
+      <h1 class="page-title">Список машин</h1>
+      <p class="subtitle">Каталог доступных автомобилей.</p>
+
+      <div class="controls">
+        <button id="refresh-cars" type="button">Обновить список</button>
+        <p id="cars-status" class="status-line" role="status" aria-live="polite"></p>
+      </div>
+
+      <section id="cars-list" class="cars-grid" aria-live="polite"></section>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>ShopTech Frontend</p>
+  </footer>
+
+  <script src="/static/cars.js"></script>
+</body>
+</html>
