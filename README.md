@@ -5,13 +5,12 @@
 Выполняйте команды из папки `shop_tech`.
 
 ```bash
-docker-compose up --build --force-recreate
+docker-compose up --build
 ```
 
 После запуска:
-
-- Сайт: `http://localhost:8000`
-- Swagger UI: `http://localhost:5001/docs`
+- Сайт: `http://localhost:80`
+<!-- - Swagger UI: `http://localhost:8000/docs` -->
 
 ## Доступный функционал
 
