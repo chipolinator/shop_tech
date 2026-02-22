@@ -7,8 +7,8 @@ docker-compose up --build
 ```
 
 После запуска:
-- Сайт: `http://localhost:8000`
-- Swagger UI: `http://localhost:8000/docs`
+- Сайт: `http://localhost:80`
+<!-- - Swagger UI: `http://localhost:8000/docs` -->
 
 ## Доступный функционал
 
