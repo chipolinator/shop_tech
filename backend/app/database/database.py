@@ -7,10 +7,8 @@ from schemas.car import Car
 import utils.security
 
 
-engine = create_engine(settings.DATABASE_URL,
-                       connect_args=settings.DATABASE_CONNECT_ARGS.model_dump())
-
-
+engine = create_engine(settings.DATABASE_URL)
+                      
 def create_db_and_tables():
     SQLModel.metadata.create_all(engine)
 
