@@ -2,8 +2,7 @@ FROM python:3.13-slim
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
 WORKDIR /app
-COPY backend /app/backend
-COPY frontend /app/frontend
+COPY ./ /app/backend
 
 WORKDIR /app/backend
 RUN uv sync --frozen

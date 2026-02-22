@@ -5,16 +5,13 @@
 Выполняйте команды из папки `shop_tech`.
 
 ```bash
-docker build -t shoptech-backend -f backend/Dockerfile .
-docker build -t shoptech-frontend -f frontend/Dockerfile frontend
-
-docker run -d --name shoptech-backend -p 5000:5000 shoptech-backend
-docker run -d --name shoptech-frontend -p 8000:80 shoptech-frontend
+docker-compose up --build --force-recreate
 ```
 
 После запуска:
+
 - Сайт: `http://localhost:8000`
-- Swagger UI: `http://localhost:5000/docs`
+- Swagger UI: `http://localhost:5001/docs`
 
 ## Доступный функционал
 
