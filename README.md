@@ -3,8 +3,7 @@
 ## Запуск через Docker
 
 ```bash
-docker build -t my_app -f backend/Dockerfile .
-docker run -d -p 8000:5000 --name app my_app
+docker-compose up --build
 ```
 
 После запуска:
