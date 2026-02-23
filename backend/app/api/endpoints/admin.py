@@ -38,6 +38,8 @@ async def token(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
+UPLOAD_DIR = "/app/uploads/cars"
+
 
 @router.post("/create_car", status_code=200)
 async def create_car(admin: Annotated[settings.ADMIN_NAME, Depends(get_admin)],
@@ -52,14 +54,11 @@ async def create_car(admin: Annotated[settings.ADMIN_NAME, Depends(get_admin)],
     try:
         contents = await image.read()
         img = Image.open(io.BytesIO(contents))
-        img.verify()
-
         if img.format not in allowed_formats:
             raise HTTPException(
                 status_code=400,
                 detail=f"Only PNG и JPEG! Get {img.format}"
             )
-
     except Exception as e:
         print(e)
         raise HTTPException(
@@ -67,11 +66,14 @@ async def create_car(admin: Annotated[settings.ADMIN_NAME, Depends(get_admin)],
             detail="File Error!"
         )
 
-    Path("uploads/cars").mkdir(parents=True, exist_ok=True)
-    file_path = f"uploads/cars/{image.filename}"
-
+    # АБСОЛЮТНЫЙ ПУТЬ для сохранения
+    Path("/app/uploads/cars").mkdir(parents=True, exist_ok=True)
+    file_path = f"/app/uploads/cars/{image.filename}"
     with open(file_path, "wb") as buffer:
         buffer.write(contents)
+
+    # ОТНОСИТЕЛЬНЫЙ ПУТЬ для БД и фронтенда
+    db_image_path = f"uploads/cars/{image.filename}"
 
     db_car = Car(
         brand=brand,
@@ -80,7 +82,7 @@ async def create_car(admin: Annotated[settings.ADMIN_NAME, Depends(get_admin)],
         displacement=displacement,
         drive=DriveType(drive),
         price=price,
-        image_path=file_path
+        image_path=db_image_path
     )
     add_car_db(db_car)
     return db_car
