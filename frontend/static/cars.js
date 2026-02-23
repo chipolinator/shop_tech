@@ -1,5 +1,6 @@
-const API_BASE = `${window.location.protocol}//${window.location.hostname}:8000/api`;
-const BACKEND_BASE = `${window.location.protocol}//${window.location.hostname}:8000`;
+// const API_BASE = `${window.location.protocol}//${window.location.hostname}:8000/api`;
+const API_BASE = `/api`;
+const BACKEND_BASE = `/app`;
 
 const refreshButton = document.getElementById("refresh-cars");
 const status = document.getElementById("cars-status");
