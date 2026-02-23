@@ -1,4 +1,6 @@
-const API_BASE = `${window.location.protocol}//${window.location.hostname}:8000/api`;
+// const API_BASE = `${window.location.protocol}//${window.location.hostname}:8000/api`;
+
+const API_BASE = `/api`;
 const ADMIN_TOKEN_KEY = "shoptech_admin_token";
 
 const tokenForm = document.getElementById("admin-token-form");

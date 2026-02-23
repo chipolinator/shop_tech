@@ -28,6 +28,8 @@ services:
     depends_on:
       - backend
     restart: unless-stopped
+    volumes:
+      - ./backend/uploads:/app/uploads
 
   db:
     container_name: shop-db

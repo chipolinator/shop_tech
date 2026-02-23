@@ -20,13 +20,19 @@ function escapeHtml(value) {
     .replaceAll("'", "&#39;");
 }
 
+// function buildImageUrl(imagePath) {
+//   if (!imagePath) return "";
+//   if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) return imagePath;
+//   const normalized = imagePath.startsWith("/") ? imagePath : `/${imagePath}`;
+//     alert(`${BACKEND_BASE}${normalized}`);
+//   return `${BACKEND_BASE}${normalized}`;
+// }
+
 function buildImageUrl(imagePath) {
   if (!imagePath) return "";
   if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) return imagePath;
-  const normalized = imagePath.startsWith("/") ? imagePath : `/${imagePath}`;
-  return `${BACKEND_BASE}${normalized}`;
+  return `/${imagePath}`;
 }
-
 function renderCars(cars) {
   if (!cars.length) {
     carsList.innerHTML = '<article class="card empty-state">Пока нет ни одной машины.</article>';
