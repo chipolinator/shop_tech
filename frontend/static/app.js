@@ -1,7 +1,8 @@
 const form = document.getElementById("register-form");
 const status = document.getElementById("form-status");
 const button = form.querySelector("button[type='submit']");
-const API_BASE = `${window.location.protocol}//${window.location.hostname}:8000/api`;
+// const API_BASE = `http://backend:5000/api`;
+const API_BASE = `/api`;
 
 function setStatus(text, type = "") {
   status.textContent = text;
