@@ -6,7 +6,7 @@ from config import settings
 from datetime import timedelta
 from schemas.car import DriveType, Car
 from pathlib import Path
-from database.database import add_car_db
+from database.database import add_car_db, delete_car_by_id
 from PIL import Image
 import io
 
@@ -41,6 +41,11 @@ async def token(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
 UPLOAD_DIR = "/app/uploads/cars"
 
 
+@router.delete("/delete_car", status_code=200)
+async def delete_car(admin: Annotated[settings.ADMIN_NAME, Depends(get_admin)], id: int):
+    delete_car_by_id(id)
+
+
 @router.post("/create_car", status_code=200)
 async def create_car(admin: Annotated[settings.ADMIN_NAME, Depends(get_admin)],
                      brand: str = Form(...),
@@ -66,13 +71,11 @@ async def create_car(admin: Annotated[settings.ADMIN_NAME, Depends(get_admin)],
             detail="File Error!"
         )
 
-    # АБСОЛЮТНЫЙ ПУТЬ для сохранения
     Path("/app/uploads/cars").mkdir(parents=True, exist_ok=True)
     file_path = f"/app/uploads/cars/{image.filename}"
     with open(file_path, "wb") as buffer:
         buffer.write(contents)
 
-    # ОТНОСИТЕЛЬНЫЙ ПУТЬ для БД и фронтенда
     db_image_path = f"uploads/cars/{image.filename}"
 
     db_car = Car(

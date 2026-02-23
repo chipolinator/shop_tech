@@ -1,4 +1,4 @@
-from sqlmodel import create_engine, Session, SQLModel, select
+from sqlmodel import create_engine, Session, SQLModel, select, delete
 from config import settings
 import models
 from schemas.user import User as UserDB
@@ -8,7 +8,8 @@ import utils.security
 
 
 engine = create_engine(settings.DATABASE_URL)
-                      
+
+
 def create_db_and_tables():
     SQLModel.metadata.create_all(engine)
 
@@ -50,6 +51,13 @@ def get_cars():
     with Session(engine) as session:
         cars = session.exec(select(Car)).all()
         return cars
+
+
+def delete_car_by_id(id: int):
+    with Session(engine) as session:
+        statement = delete(Car).where(Car.id == id)
+        result = session.exec(statement)
+        session.commit()
 
 
 def create_admin(name: str, password: str):
