@@ -109,6 +109,22 @@ def user_cart(username: str):
         ]
 
 
+def purchase_car(username: str, car_id: int):
+    with Session(engine) as session:
+        user = session.exec(select(UserDB).where(
+            UserDB.username == username)).first()
+
+        cart_item = session.exec(
+            select(CartItem)
+            .where(CartItem.user_id == user.id)
+            .where(CartItem.car_id == car_id)
+        ).first()
+
+        session.delete(cart_item)
+        session.commit()
+        return {"message": "del from cart"}
+
+
 def create_admin(name: str, password: str):
     with Session(engine) as session:
         statement = select(Admin).where(Admin.username == name)
