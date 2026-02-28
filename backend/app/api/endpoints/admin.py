@@ -4,9 +4,9 @@ from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from utils.security import verify_password, create_access_token, decode_token
 from config import settings
 from datetime import timedelta
-from schemas.car import DriveType, Car
+from schemas.models import DriveType, Car
 from pathlib import Path
-from database.database import add_car_db, delete_car_by_id
+from database.database import add_car_db, delete_car_by_id, delete_user_by_id,get_users
 from PIL import Image
 import io
 
@@ -44,6 +44,14 @@ UPLOAD_DIR = "/app/uploads/cars"
 @router.delete("/delete_car", status_code=200)
 async def delete_car(admin: Annotated[settings.ADMIN_NAME, Depends(get_admin)], id: int):
     delete_car_by_id(id)
+
+
+@router.delete("/delete_user", status_code=200)
+async def delete_user(admin: Annotated[settings.ADMIN_NAME, Depends(get_admin)], id: int):
+    delete_user_by_id(id)
+@router.get("/all_users",status_code=200)
+async def get_all_users(admin: Annotated[settings.ADMIN_NAME, Depends(get_admin)]):
+    return get_users()
 
 
 @router.post("/create_car", status_code=200)
