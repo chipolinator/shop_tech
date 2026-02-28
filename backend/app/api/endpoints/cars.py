@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from database.database import get_cars, get_user_by_name, add_to_cart,user_cart
+from database.database import get_cars, get_user_by_name, add_to_cart, user_cart, purchase_car
 from config import settings
 from utils.security import create_access_token, verify_password, decode_token
 from datetime import timedelta
@@ -54,3 +54,10 @@ async def add_car(car_id: int,
 async def add_car(
         current_user: User = Depends(get_current_user)):
     return user_cart(current_user.username)
+
+
+@router.delete("/buy")
+async def buy_car(
+        car_id: int,
+        current_user: User = Depends(get_current_user)):
+    return purchase_car(current_user.username, car_id)
