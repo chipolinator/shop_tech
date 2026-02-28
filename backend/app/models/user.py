@@ -24,3 +24,8 @@ class UserLoginResponse(BaseModel):
 class User(BaseModel):
     name: str
     password: str
+
+
+class UserDBResponse(BaseModel):
+    id: int
+    name: str

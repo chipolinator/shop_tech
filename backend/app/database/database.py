@@ -1,9 +1,12 @@
 from sqlmodel import create_engine, Session, SQLModel, select, delete
 from config import settings
 import models
-from schemas.user import User as UserDB
-from schemas.admin import Admin
-from schemas.car import Car
+from schemas.models import User as UserDB, Admin, Car, CartItem
+# from schemas.user import User as UserDB
+# from schemas.admin import Admin
+#
+# from schemas.car import Car
+# from schemas.cart import CartItem
 import utils.security
 
 
@@ -39,6 +42,18 @@ def get_user_by_name(name: str):
         return result
 
 
+def delete_user_by_id(id: int):
+    with Session(engine) as session:
+        session.exec(delete(UserDB).where(UserDB.id == id))
+        session.commit()
+
+
+def get_users():
+    with Session(engine) as session:
+        result = session.execute(select(UserDB.id, UserDB.name))
+        return [models.user.UserDBResponse(name=res.username, id=res.id) for res in result]
+
+
 def add_car_db(car: Car):
     with Session(engine) as session:
         session.add(car)
@@ -58,6 +73,40 @@ def delete_car_by_id(id: int):
         statement = delete(Car).where(Car.id == id)
         result = session.exec(statement)
         session.commit()
+
+
+def add_to_cart(username: str, car_id: int):
+    with Session(engine) as session:
+        user = session.exec(select(UserDB).where(
+            UserDB.username == username)).first()
+        cart_item = CartItem(user_id=user.id, car_id=car_id)
+        session.add(cart_item)
+        session.commit()
+        session.refresh(cart_item)
+        return cart_item
+
+
+def user_cart(username: str):
+    with Session(engine) as session:
+        user = session.exec(select(UserDB).where(
+            UserDB.username == username)).first()
+        cart_items = session.exec(
+            select(CartItem, Car)
+            .join(Car, CartItem.car_id == Car.id)
+            .where(CartItem.user_id == user.id)
+        ).all()
+
+        return [
+            {
+                "cart_item_id": item.CartItem.id,
+                "car_id": item.Car.id,
+                "brand": item.Car.brand,
+                "model": item.Car.model,
+                "price": item.Car.price,
+                "image_path": item.Car.image_path,
+            }
+            for item in cart_items
+        ]
 
 
 def create_admin(name: str, password: str):
