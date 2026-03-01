@@ -1,10 +1,24 @@
-// const API_BASE = `${window.location.protocol}//${window.location.hostname}:8000/api`;
 const API_BASE = `/api`;
-const BACKEND_BASE = `/app`;
+const USER_TOKEN_KEY = "shoptech_user_token";
+const ENDPOINTS = {
+  listCars: `${API_BASE}/cars/all`,
+  addToCart: `${API_BASE}/cars/add_car`,
+  cart: `${API_BASE}/cars/cart`,
+  buy: `${API_BASE}/cars/buy`,
+};
 
 const refreshButton = document.getElementById("refresh-cars");
 const status = document.getElementById("cars-status");
 const carsList = document.getElementById("cars-list");
+const controls = document.querySelector(".controls");
+
+const cartButton = document.createElement("button");
+cartButton.type = "button";
+cartButton.id = "show-cart";
+cartButton.textContent = "Показать корзину";
+controls.insertBefore(cartButton, status);
+
+let currentView = "catalog";
 
 function setStatus(text, type = "") {
   status.textContent = text;
@@ -20,22 +34,40 @@ function escapeHtml(value) {
     .replaceAll("'", "&#39;");
 }
 
-// function buildImageUrl(imagePath) {
-//   if (!imagePath) return "";
-//   if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) return imagePath;
-//   const normalized = imagePath.startsWith("/") ? imagePath : `/${imagePath}`;
-//     alert(`${BACKEND_BASE}${normalized}`);
-//   return `${BACKEND_BASE}${normalized}`;
-// }
+function getUserToken() {
+  return localStorage.getItem(USER_TOKEN_KEY) || "";
+}
 
 function buildImageUrl(imagePath) {
   if (!imagePath) return "";
   if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) return imagePath;
-  return `/${imagePath}`;
+  return imagePath.startsWith("/") ? imagePath : `/${imagePath}`;
 }
-function renderCars(cars) {
+
+async function readResponseBody(response) {
+  const text = await response.text();
+  if (!text) return null;
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
+}
+
+function errorDetail(response, data) {
+  if (data && typeof data === "object" && data.detail) {
+    return `: ${data.detail}`;
+  }
+  if (typeof data === "string" && data.trim()) {
+    return `: ${data}`;
+  }
+  return ` (HTTP ${response.status})`;
+}
+
+function renderCars(cars, emptyText) {
   if (!cars.length) {
-    carsList.innerHTML = '<article class="card empty-state">Пока нет ни одной машины.</article>';
+    carsList.innerHTML = `<article class="card empty-state">${escapeHtml(emptyText)}</article>`;
     return;
   }
 
@@ -46,6 +78,16 @@ function renderCars(cars) {
       const imageTag = imageUrl
         ? `<img class="car-image" src="${escapeHtml(imageUrl)}" alt="${title}" loading="lazy">`
         : '<div class="car-image placeholder">Без изображения</div>';
+      const id = Number(car.id);
+      const hasValidId = Number.isInteger(id) && id > 0;
+      const actionButtons = hasValidId
+        ? `
+          <div class="controls">
+            <button type="button" data-action="add" data-car-id="${id}">В корзину</button>
+            <button type="button" data-action="buy" data-car-id="${id}">Купить</button>
+          </div>
+        `
+        : "";
 
       return `
         <article class="card car-card">
@@ -56,6 +98,7 @@ function renderCars(cars) {
           <p><strong>Привод:</strong> ${escapeHtml(car.drive)}</p>
           <p><strong>Цена:</strong> ${escapeHtml(car.price)}</p>
           <p class="muted"><strong>ID:</strong> ${escapeHtml(car.id ?? "n/a")}</p>
+          ${actionButtons}
         </article>
       `;
     })
@@ -63,29 +106,117 @@ function renderCars(cars) {
 }
 
 async function loadCars() {
+  currentView = "catalog";
   refreshButton.disabled = true;
+  cartButton.disabled = true;
   setStatus("Загрузка списка машин...");
 
   try {
-    const response = await fetch(`${API_BASE}/cars/all`);
-    const data = await response.json().catch(() => null);
+    const response = await fetch(ENDPOINTS.listCars);
+    const data = await readResponseBody(response);
 
     if (!response.ok || !Array.isArray(data)) {
-      const detail = data?.detail ? `: ${data.detail}` : ` (HTTP ${response.status})`;
-      setStatus(`Ошибка загрузки машин${detail}`, "error");
+      setStatus(`Ошибка загрузки машин${errorDetail(response, data)}`, "error");
       carsList.innerHTML = "";
       return;
     }
 
-    renderCars(data);
+    renderCars(data, "Пока нет ни одной машины.");
     setStatus(`Загружено машин: ${data.length}.`, "success");
   } catch {
     setStatus("Нет соединения с backend.", "error");
     carsList.innerHTML = "";
   } finally {
     refreshButton.disabled = false;
+    cartButton.disabled = false;
   }
 }
 
+async function loadCart() {
+  const token = getUserToken();
+  if (!token) {
+    setStatus("Сначала войдите как пользователь на странице 'Вход'.", "error");
+    return;
+  }
+
+  currentView = "cart";
+  refreshButton.disabled = true;
+  cartButton.disabled = true;
+  setStatus("Загрузка корзины...");
+
+  try {
+    const response = await fetch(ENDPOINTS.cart, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await readResponseBody(response);
+
+    if (!response.ok || !Array.isArray(data)) {
+      setStatus(`Ошибка загрузки корзины${errorDetail(response, data)}`, "error");
+      return;
+    }
+
+    renderCars(data, "Корзина пуста.");
+    setStatus(`В корзине машин: ${data.length}.`, "success");
+  } catch {
+    setStatus("Нет соединения с backend.", "error");
+  } finally {
+    refreshButton.disabled = false;
+    cartButton.disabled = false;
+  }
+}
+
+async function callCarAction(action, carId) {
+  const token = getUserToken();
+  if (!token) {
+    setStatus("Сначала войдите как пользователь на странице 'Вход'.", "error");
+    return false;
+  }
+
+  const endpoint = action === "add" ? ENDPOINTS.addToCart : ENDPOINTS.buy;
+  const method = action === "add" ? "POST" : "DELETE";
+  const successText = action === "add" ? "Машина добавлена в корзину." : "Покупка выполнена.";
+
+  try {
+    const response = await fetch(`${endpoint}?car_id=${encodeURIComponent(carId)}`, {
+      method,
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await readResponseBody(response);
+
+    if (!response.ok) {
+      setStatus(`Ошибка действия${errorDetail(response, data)}`, "error");
+      return false;
+    }
+
+    setStatus(successText, "success");
+    return true;
+  } catch {
+    setStatus("Нет соединения с backend.", "error");
+    return false;
+  }
+}
+
+carsList.addEventListener("click", async (event) => {
+  const button = event.target.closest("button[data-action]");
+  if (!button) return;
+
+  const action = button.dataset.action;
+  const carId = Number(button.dataset.carId);
+  if (!Number.isInteger(carId) || (action !== "add" && action !== "buy")) {
+    return;
+  }
+
+  button.disabled = true;
+  const ok = await callCarAction(action, carId);
+  button.disabled = false;
+
+  if (!ok) return;
+  if (currentView === "cart") {
+    await loadCart();
+  }
+});
+
 refreshButton.addEventListener("click", loadCars);
+cartButton.addEventListener("click", loadCart);
+
 loadCars();
