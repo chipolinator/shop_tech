@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ShopTech | Вход</title>
+  <title>ShopTech | Перенаправление</title>
+  <meta http-equiv="refresh" content="0; url=/index.html?mode=login">
   <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
@@ -11,9 +12,9 @@
     <div class="container topbar-inner">
       <p class="brand">ShopTech API Demo</p>
       <nav class="nav-links" aria-label="Навигация">
-        <a class="nav-link" href="/index.html">Регистрация</a>
-        <a class="nav-link active" href="/user.html">Вход</a>
+        <a class="nav-link active" href="/index.html">Аккаунт</a>
         <a class="nav-link" href="/cars.html">Машины</a>
+        <a class="nav-link" href="/cart.html">Корзина</a>
         <a class="nav-link" href="/admin.html">Админ</a>
       </nav>
     </div>
@@ -21,23 +22,10 @@
 
   <main class="page-main">
     <section class="container">
-      <h1 class="page-title">Вход</h1>
-      <p class="subtitle">
-        Авторизация пользователя.
-      </p>
-
       <article class="card">
-        <h2>Вход</h2>
-        <form id="user-token-form" class="stack-form" novalidate>
-          <label for="user-name">Имя</label>
-          <input id="user-name" name="username" type="text" placeholder="Введите имя" required>
-
-          <label for="user-password">Пароль</label>
-          <input id="user-password" name="password" type="password" placeholder="Введите пароль" required>
-
-          <button type="submit">Войти</button>
-          <p id="user-token-status" class="status-line" role="status" aria-live="polite"></p>
-        </form>
+        <h1 class="page-title">Страница входа объединена</h1>
+        <p class="subtitle">Переходим на единую страницу аккаунта...</p>
+        <p><a class="nav-link" href="/index.html?mode=login">Открыть страницу входа</a></p>
       </article>
     </section>
   </main>
@@ -46,6 +34,8 @@
     <p>ShopTech Frontend</p>
   </footer>
 
-  <script src="/static/user.js"></script>
+  <script>
+    window.location.replace("/index.html?mode=login");
+  </script>
 </body>
 </html>

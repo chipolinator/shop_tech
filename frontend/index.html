@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ShopTech | Регистрация</title>
+  <title>ShopTech | Аккаунт</title>
   <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
@@ -11,9 +11,9 @@
     <div class="container topbar-inner">
       <p class="brand">ShopTech API Demo</p>
       <nav class="nav-links" aria-label="Навигация">
-        <a class="nav-link active" href="/index.html">Регистрация</a>
-        <a class="nav-link" href="/user.html">Вход</a>
+        <a class="nav-link active" href="/index.html">Аккаунт</a>
         <a class="nav-link" href="/cars.html">Машины</a>
+        <a class="nav-link" href="/cart.html">Корзина</a>
         <a class="nav-link" href="/admin.html">Админ</a>
       </nav>
     </div>
@@ -22,22 +22,29 @@
   <main class="page-main">
     <section class="container hero">
       <div class="hero-text">
-        <h1>Регистрация нового пользователя</h1>
+        <h1>Аккаунт пользователя</h1>
         <p class="subtitle">
-          Создайте аккаунт, затем используйте остальные разделы в верхнем меню.
+          На этой странице доступны регистрация и вход. Выберите действие в форме.
         </p>
       </div>
 
       <div class="card" id="signup">
-        <h2>Создать аккаунт</h2>
-        <form id="register-form" class="register-form" novalidate>
+        <h2 id="auth-card-title">Создать аккаунт</h2>
+        <p id="auth-help" class="subtitle">Новый пользователь: создайте аккаунт.</p>
+        <form id="auth-form" class="register-form" novalidate>
+          <label for="auth-action">Действие</label>
+          <select id="auth-action" name="action" required>
+            <option value="register">Регистрация</option>
+            <option value="login">Вход</option>
+          </select>
+
           <label for="name">Имя</label>
-          <input id="name" name="name" type="text" placeholder="Введите имя" required>
+          <input id="name" name="name" type="text" placeholder="Введите имя" required autocomplete="username">
 
           <label for="password">Пароль</label>
-          <input id="password" name="password" type="password" placeholder="Минимум 6 символов" required minlength="6">
+          <input id="password" name="password" type="password" placeholder="Введите пароль" required autocomplete="current-password">
 
-          <button type="submit">Зарегистрироваться</button>
+          <button id="auth-submit" type="submit">Зарегистрироваться</button>
           <p id="form-status" class="status-line" role="status" aria-live="polite"></p>
         </form>
       </div>
@@ -45,7 +52,7 @@
   </main>
 
   <footer class="footer">
-    <p>Выполнила команда Monopoliki</p>
+    <p>ShopTech Frontend</p>
   </footer>
 
   <script src="/static/app.js"></script>

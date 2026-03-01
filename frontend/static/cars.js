@@ -3,22 +3,12 @@ const USER_TOKEN_KEY = "shoptech_user_token";
 const ENDPOINTS = {
   listCars: `${API_BASE}/cars/all`,
   addToCart: `${API_BASE}/cars/add_car`,
-  cart: `${API_BASE}/cars/cart`,
-  buy: `${API_BASE}/cars/buy`,
 };
 
 const refreshButton = document.getElementById("refresh-cars");
+const goToCartButton = document.getElementById("go-to-cart");
 const status = document.getElementById("cars-status");
 const carsList = document.getElementById("cars-list");
-const controls = document.querySelector(".controls");
-
-const cartButton = document.createElement("button");
-cartButton.type = "button";
-cartButton.id = "show-cart";
-cartButton.textContent = "Показать корзину";
-controls.insertBefore(cartButton, status);
-
-let currentView = "catalog";
 
 function setStatus(text, type = "") {
   status.textContent = text;
@@ -84,7 +74,6 @@ function renderCars(cars, emptyText) {
         ? `
           <div class="controls">
             <button type="button" data-action="add" data-car-id="${id}">В корзину</button>
-            <button type="button" data-action="buy" data-car-id="${id}">Купить</button>
           </div>
         `
         : "";
@@ -106,9 +95,8 @@ function renderCars(cars, emptyText) {
 }
 
 async function loadCars() {
-  currentView = "catalog";
   refreshButton.disabled = true;
-  cartButton.disabled = true;
+  goToCartButton.disabled = true;
   setStatus("Загрузка списка машин...");
 
   try {
@@ -128,53 +116,20 @@ async function loadCars() {
     carsList.innerHTML = "";
   } finally {
     refreshButton.disabled = false;
-    cartButton.disabled = false;
+    goToCartButton.disabled = false;
   }
 }
 
-async function loadCart() {
-  const token = getUserToken();
-  if (!token) {
-    setStatus("Сначала войдите как пользователь на странице 'Вход'.", "error");
-    return;
-  }
-
-  currentView = "cart";
-  refreshButton.disabled = true;
-  cartButton.disabled = true;
-  setStatus("Загрузка корзины...");
-
-  try {
-    const response = await fetch(ENDPOINTS.cart, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const data = await readResponseBody(response);
-
-    if (!response.ok || !Array.isArray(data)) {
-      setStatus(`Ошибка загрузки корзины${errorDetail(response, data)}`, "error");
-      return;
-    }
-
-    renderCars(data, "Корзина пуста.");
-    setStatus(`В корзине машин: ${data.length}.`, "success");
-  } catch {
-    setStatus("Нет соединения с backend.", "error");
-  } finally {
-    refreshButton.disabled = false;
-    cartButton.disabled = false;
-  }
-}
-
-async function callCarAction(action, carId) {
+async function addCarToCart(carId) {
   const token = getUserToken();
   if (!token) {
     setStatus("Сначала войдите как пользователь на странице 'Вход'.", "error");
     return false;
   }
 
-  const endpoint = action === "add" ? ENDPOINTS.addToCart : ENDPOINTS.buy;
-  const method = action === "add" ? "POST" : "DELETE";
-  const successText = action === "add" ? "Машина добавлена в корзину." : "Покупка выполнена.";
+  const endpoint = ENDPOINTS.addToCart;
+  const method = "POST";
+  const successText = "Машина добавлена в корзину.";
 
   try {
     const response = await fetch(`${endpoint}?car_id=${encodeURIComponent(carId)}`, {
@@ -184,6 +139,16 @@ async function callCarAction(action, carId) {
     const data = await readResponseBody(response);
 
     if (!response.ok) {
+      const isAuthError =
+        response.status === 401 ||
+        (data && typeof data === "object" && data.detail === "Could not validate credentials");
+      if (isAuthError) {
+        localStorage.removeItem(USER_TOKEN_KEY);
+        window.alert("Чтобы добавить машину в корзину, войдите как пользователь на странице \"Вход\".");
+        setStatus("Требуется вход пользователя.", "error");
+        return false;
+      }
+
       setStatus(`Ошибка действия${errorDetail(response, data)}`, "error");
       return false;
     }
@@ -202,21 +167,19 @@ carsList.addEventListener("click", async (event) => {
 
   const action = button.dataset.action;
   const carId = Number(button.dataset.carId);
-  if (!Number.isInteger(carId) || (action !== "add" && action !== "buy")) {
+  if (!Number.isInteger(carId) || action !== "add") {
     return;
   }
 
   button.disabled = true;
-  const ok = await callCarAction(action, carId);
+  const ok = await addCarToCart(carId);
   button.disabled = false;
-
   if (!ok) return;
-  if (currentView === "cart") {
-    await loadCart();
-  }
 });
 
 refreshButton.addEventListener("click", loadCars);
-cartButton.addEventListener("click", loadCart);
+goToCartButton.addEventListener("click", () => {
+  window.location.href = "/cart.html";
+});
 
 loadCars();

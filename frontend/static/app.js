@@ -1,20 +1,52 @@
-const form = document.getElementById("register-form");
-const status = document.getElementById("form-status");
-const button = form.querySelector("button[type='submit']");
-// const API_BASE = `http://backend:5000/api`;
 const API_BASE = `/api`;
+const USER_TOKEN_KEY = "shoptech_user_token";
+
+const form = document.getElementById("auth-form");
+const actionSelect = document.getElementById("auth-action");
+const nameInput = document.getElementById("name");
+const passwordInput = document.getElementById("password");
+const status = document.getElementById("form-status");
+const button = document.getElementById("auth-submit");
+const cardTitle = document.getElementById("auth-card-title");
+const helpText = document.getElementById("auth-help");
 
 function setStatus(text, type = "") {
   status.textContent = text;
   status.className = type ? `status-line ${type}` : "status-line";
 }
 
-function validate(name, password) {
-  if (name.length < 2) return "Имя должно быть минимум 2 символа.";
-  if (password.length < 6) return "Пароль должен быть минимум 6 символов.";
-  return "";
+function readResponseError(response, data, prefix) {
+  const detail = data?.detail ? `: ${data.detail}` : ` (HTTP ${response.status})`;
+  return `${prefix}${detail}`;
 }
 
+function applyActionUi(action) {
+  if (action === "login") {
+    cardTitle.textContent = "Вход";
+    helpText.textContent = "Уже зарегистрированы: войдите в аккаунт.";
+    button.textContent = "Войти";
+    passwordInput.placeholder = "Введите пароль";
+    passwordInput.minLength = 1;
+    return;
+  }
+
+  cardTitle.textContent = "Создать аккаунт";
+  helpText.textContent = "Новый пользователь: создайте аккаунт.";
+  button.textContent = "Зарегистрироваться";
+  passwordInput.placeholder = "Минимум 6 символов";
+  passwordInput.minLength = 6;
+}
+
+function validate(action, name, password) {
+  if (!name) return "Введите имя.";
+  if (!password) return "Введите пароль.";
+
+  if (action === "register") {
+    if (name.length < 2) return "Имя должно быть минимум 2 символа.";
+    if (password.length < 6) return "Пароль должен быть минимум 6 символов.";
+  }
+  return "";
+}
 
 async function registerUser(name, password) {
   const response = await fetch(`${API_BASE}/reg/reg_user`, {
@@ -22,41 +54,74 @@ async function registerUser(name, password) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name, password }),
   });
-
   if (response.ok) return { ok: true };
 
   const data = await response.json().catch(() => null);
-  const detail = data?.detail ? `: ${data.detail}` : ` (HTTP ${response.status})`;
-  return { ok: false, message: `Ошибка регистрации${detail}` };
+  return { ok: false, message: readResponseError(response, data, "Ошибка регистрации") };
 }
+
+async function loginUser(name, password) {
+  const body = new URLSearchParams();
+  body.set("username", name);
+  body.set("password", password);
+
+  const response = await fetch(`${API_BASE}/reg/token`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body,
+  });
+  const data = await response.json().catch(() => null);
+  if (!response.ok || !data?.access_token) {
+    return { ok: false, message: readResponseError(response, data, "Ошибка входа") };
+  }
+
+  localStorage.setItem(USER_TOKEN_KEY, data.access_token);
+  return { ok: true };
+}
+
+actionSelect.addEventListener("change", () => {
+  applyActionUi(actionSelect.value);
+  setStatus("");
+});
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
 
-  const name = form.name.value.trim();
-  const password = form.password.value;
-  const validationError = validate(name, password);
-
+  const action = actionSelect.value;
+  const name = nameInput.value.trim();
+  const password = passwordInput.value;
+  const validationError = validate(action, name, password);
   if (validationError) {
     setStatus(validationError, "error");
     return;
   }
 
   button.disabled = true;
-  setStatus("Отправка...");
+  setStatus(action === "login" ? "Выполняю вход..." : "Создаю аккаунт...");
 
   try {
-    const result = await registerUser(name, password);
+    const result = action === "login"
+      ? await loginUser(name, password)
+      : await registerUser(name, password);
+
     if (!result.ok) {
       setStatus(result.message, "error");
       return;
     }
 
     form.reset();
-    setStatus("Аккаунт успешно создан.", "success");
+    actionSelect.value = action;
+    applyActionUi(action);
+    setStatus(action === "login" ? "Вход выполнен." : "Аккаунт успешно создан.", "success");
   } catch {
     setStatus("Нет подключения к серверу. Проверьте, что backend запущен.", "error");
   } finally {
     button.disabled = false;
   }
 });
+
+const requestedMode = new URLSearchParams(window.location.search).get("mode");
+if (requestedMode === "login" || requestedMode === "register") {
+  actionSelect.value = requestedMode;
+}
+applyActionUi(actionSelect.value);
