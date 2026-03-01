@@ -145,7 +145,6 @@ tokenForm.addEventListener("submit", async (event) => {
     }
 
     localStorage.setItem(ADMIN_TOKEN_KEY, data.access_token);
-    createCarOutput.textContent = formatJson(data);
     setStatus(tokenStatus, "Вход администратора выполнен.", "success");
     setStatus(actionsStatus, "Можно использовать админ-действия.", "success");
   } catch {
