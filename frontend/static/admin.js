@@ -1,7 +1,12 @@
-// const API_BASE = `${window.location.protocol}//${window.location.hostname}:8000/api`;
-
 const API_BASE = `/api`;
 const ADMIN_TOKEN_KEY = "shoptech_admin_token";
+const ENDPOINTS = {
+  token: `${API_BASE}/admin/token`,
+  createCar: `${API_BASE}/admin/create_car`,
+  allUsers: `${API_BASE}/admin/all_users`,
+  deleteUser: `${API_BASE}/admin/delete_user`,
+  deleteCar: `${API_BASE}/admin/delete_car`,
+};
 
 const tokenForm = document.getElementById("admin-token-form");
 const tokenStatus = document.getElementById("admin-token-status");
@@ -9,6 +14,23 @@ const tokenStatus = document.getElementById("admin-token-status");
 const createCarForm = document.getElementById("create-car-form");
 const createCarStatus = document.getElementById("create-car-status");
 const createCarOutput = document.getElementById("create-car-output");
+
+const adminActions = document.createElement("div");
+adminActions.className = "stack-form";
+adminActions.innerHTML = `
+  <div class="controls">
+    <button type="button" id="admin-load-users">Список пользователей</button>
+    <button type="button" id="admin-delete-user">Удалить пользователя</button>
+    <button type="button" id="admin-delete-car">Удалить машину</button>
+  </div>
+  <p id="admin-actions-status" class="status-line" role="status" aria-live="polite"></p>
+`;
+createCarOutput.insertAdjacentElement("afterend", adminActions);
+
+const loadUsersButton = document.getElementById("admin-load-users");
+const deleteUserButton = document.getElementById("admin-delete-user");
+const deleteCarButton = document.getElementById("admin-delete-car");
+const actionsStatus = document.getElementById("admin-actions-status");
 
 function setStatus(node, text, type = "") {
   node.textContent = text;
@@ -21,6 +43,74 @@ function formatJson(value) {
 
 function getAdminToken() {
   return localStorage.getItem(ADMIN_TOKEN_KEY) || "";
+}
+
+function getAuthHeaders() {
+  const token = getAdminToken();
+  if (!token) return null;
+  return { Authorization: `Bearer ${token}` };
+}
+
+async function readResponseBody(response) {
+  const text = await response.text();
+  if (!text) return null;
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
+}
+
+function errorDetail(response, data) {
+  if (data && typeof data === "object" && data.detail) {
+    return `: ${data.detail}`;
+  }
+  if (typeof data === "string" && data.trim()) {
+    return `: ${data}`;
+  }
+  return ` (HTTP ${response.status})`;
+}
+
+function askPositiveId(title) {
+  const value = window.prompt(title, "");
+  if (value === null) return null;
+  const id = Number(value.trim());
+
+  if (!Number.isInteger(id) || id <= 0) {
+    setStatus(actionsStatus, "Нужен целочисленный ID больше 0.", "error");
+    return null;
+  }
+  return id;
+}
+
+async function runAdminRequest(url, options = {}, statusNode = actionsStatus) {
+  const headers = getAuthHeaders();
+  if (!headers) {
+    setStatus(statusNode, "Сначала выполните вход как админ.", "error");
+    return { ok: false, data: null };
+  }
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        ...headers,
+        ...(options.headers ?? {}),
+      },
+    });
+    const data = await readResponseBody(response);
+
+    if (!response.ok) {
+      setStatus(statusNode, `Ошибка запроса${errorDetail(response, data)}`, "error");
+      return { ok: false, data };
+    }
+
+    return { ok: true, data };
+  } catch {
+    setStatus(statusNode, "Нет соединения с backend.", "error");
+    return { ok: false, data: null };
+  }
 }
 
 tokenForm.addEventListener("submit", async (event) => {
@@ -42,22 +132,22 @@ tokenForm.addEventListener("submit", async (event) => {
   setStatus(tokenStatus, "Выполняю вход...");
 
   try {
-    const response = await fetch(`${API_BASE}/admin/token`, {
+    const response = await fetch(ENDPOINTS.token, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body,
     });
-    const data = await response.json().catch(() => null);
+    const data = await readResponseBody(response);
 
     if (!response.ok || !data?.access_token) {
-      const detail = data?.detail ? `: ${data.detail}` : ` (HTTP ${response.status})`;
-      setStatus(tokenStatus, `Ошибка входа${detail}`, "error");
+      setStatus(tokenStatus, `Ошибка входа${errorDetail(response, data)}`, "error");
       return;
     }
 
     localStorage.setItem(ADMIN_TOKEN_KEY, data.access_token);
     createCarOutput.textContent = formatJson(data);
     setStatus(tokenStatus, "Вход администратора выполнен.", "success");
+    setStatus(actionsStatus, "Можно использовать админ-действия.", "success");
   } catch {
     setStatus(tokenStatus, "Нет соединения с backend.", "error");
   } finally {
@@ -68,8 +158,8 @@ tokenForm.addEventListener("submit", async (event) => {
 createCarForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const button = createCarForm.querySelector("button[type='submit']");
-  const token = getAdminToken();
-  if (!token) {
+  const headers = getAuthHeaders();
+  if (!headers) {
     setStatus(createCarStatus, "Сначала выполните вход как админ.", "error");
     return;
   }
@@ -85,16 +175,15 @@ createCarForm.addEventListener("submit", async (event) => {
   setStatus(createCarStatus, "Создаю машину...");
 
   try {
-    const response = await fetch(`${API_BASE}/admin/create_car`, {
+    const response = await fetch(ENDPOINTS.createCar, {
       method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
+      headers,
       body: formData,
     });
-    const data = await response.json().catch(() => null);
+    const data = await readResponseBody(response);
 
     if (!response.ok) {
-      const detail = data?.detail ? `: ${data.detail}` : ` (HTTP ${response.status})`;
-      setStatus(createCarStatus, `Ошибка создания машины${detail}`, "error");
+      setStatus(createCarStatus, `Ошибка создания машины${errorDetail(response, data)}`, "error");
       createCarOutput.textContent = formatJson(data ?? {});
       return;
     }
@@ -107,4 +196,54 @@ createCarForm.addEventListener("submit", async (event) => {
   } finally {
     button.disabled = false;
   }
+});
+
+loadUsersButton.addEventListener("click", async () => {
+  loadUsersButton.disabled = true;
+  setStatus(actionsStatus, "Загружаю пользователей...");
+
+  const result = await runAdminRequest(ENDPOINTS.allUsers);
+  if (result.ok) {
+    createCarOutput.textContent = formatJson(result.data ?? []);
+    const count = Array.isArray(result.data) ? result.data.length : 0;
+    setStatus(actionsStatus, `Пользователей получено: ${count}.`, "success");
+  }
+
+  loadUsersButton.disabled = false;
+});
+
+deleteUserButton.addEventListener("click", async () => {
+  const id = askPositiveId("Введите ID пользователя для удаления:");
+  if (id === null) return;
+
+  deleteUserButton.disabled = true;
+  setStatus(actionsStatus, "Удаляю пользователя...");
+
+  const result = await runAdminRequest(`${ENDPOINTS.deleteUser}?id=${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
+  if (result.ok) {
+    createCarOutput.textContent = formatJson(result.data ?? { deleted_user_id: id });
+    setStatus(actionsStatus, `Пользователь ${id} удалён.`, "success");
+  }
+
+  deleteUserButton.disabled = false;
+});
+
+deleteCarButton.addEventListener("click", async () => {
+  const id = askPositiveId("Введите ID машины для удаления:");
+  if (id === null) return;
+
+  deleteCarButton.disabled = true;
+  setStatus(actionsStatus, "Удаляю машину...");
+
+  const result = await runAdminRequest(`${ENDPOINTS.deleteCar}?id=${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
+  if (result.ok) {
+    createCarOutput.textContent = formatJson(result.data ?? { deleted_car_id: id });
+    setStatus(actionsStatus, `Машина ${id} удалена.`, "success");
+  }
+
+  deleteCarButton.disabled = false;
 });
