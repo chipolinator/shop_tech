@@ -2,7 +2,9 @@ const API_BASE = `/api`;
 const USER_TOKEN_KEY = "shoptech_user_token";
 
 const form = document.getElementById("auth-form");
-const actionSelect = document.getElementById("auth-action");
+const actionInput = document.getElementById("auth-action");
+const actionSlider = document.getElementById("auth-action-slider");
+const actionOptions = Array.from(document.querySelectorAll(".auth-slider-option"));
 const nameInput = document.getElementById("name");
 const passwordInput = document.getElementById("password");
 const status = document.getElementById("form-status");
@@ -79,15 +81,29 @@ async function loginUser(name, password) {
   return { ok: true };
 }
 
-actionSelect.addEventListener("change", () => {
-  applyActionUi(actionSelect.value);
+function setAction(action) {
+  const nextAction = action === "login" ? "login" : "register";
+  actionInput.value = nextAction;
+  actionSlider.classList.toggle("is-login", nextAction === "login");
+  actionOptions.forEach((option) => {
+    const isActive = option.dataset.action === nextAction;
+    option.classList.toggle("active", isActive);
+    option.setAttribute("aria-pressed", String(isActive));
+  });
+  applyActionUi(nextAction);
   setStatus("");
+}
+
+actionOptions.forEach((option) => {
+  option.addEventListener("click", () => {
+    setAction(option.dataset.action);
+  });
 });
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
 
-  const action = actionSelect.value;
+  const action = actionInput.value;
   const name = nameInput.value.trim();
   const password = passwordInput.value;
   const validationError = validate(action, name, password);
@@ -110,8 +126,7 @@ form.addEventListener("submit", async (event) => {
     }
 
     form.reset();
-    actionSelect.value = action;
-    applyActionUi(action);
+    setAction(action);
     setStatus(action === "login" ? "Вход выполнен." : "Аккаунт успешно создан.", "success");
   } catch {
     setStatus("Нет подключения к серверу. Проверьте, что backend запущен.", "error");
@@ -122,6 +137,7 @@ form.addEventListener("submit", async (event) => {
 
 const requestedMode = new URLSearchParams(window.location.search).get("mode");
 if (requestedMode === "login" || requestedMode === "register") {
-  actionSelect.value = requestedMode;
+  setAction(requestedMode);
+} else {
+  setAction(actionInput.value);
 }
-applyActionUi(actionSelect.value);
