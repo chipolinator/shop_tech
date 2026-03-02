@@ -15,16 +15,13 @@ router = APIRouter()
 
 
 async def get_admin(token: Annotated[str, Depends(oauth2_scheme)]):
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
     username = decode_token(token)
-    admin = settings.ADMIN_NAME
-    if admin is None:
-        raise credentials_exception
-    return admin
+    if username != settings.ADMIN_NAME:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not enough permissions",
+        )
+    return username
 
 
 @router.post("/token", status_code=200)

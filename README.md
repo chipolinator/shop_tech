@@ -6,9 +6,13 @@
 
 ```bash
 docker-compose up --build
+
+
+docker compose down
 ```
 
 После запуска:
+
 - Сайт: `http://localhost:80`
 <!-- - Swagger UI: `http://localhost:8000/docs` -->
 

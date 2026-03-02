@@ -68,6 +68,19 @@ function errorDetail(response, data) {
   return ` (HTTP ${response.status})`;
 }
 
+function isAuthError(response, data) {
+  return (
+    response.status === 401 ||
+    (data && typeof data === "object" && data.detail === "Could not validate credentials")
+  );
+}
+
+function handleAuthError(statusNode) {
+  localStorage.removeItem(ADMIN_TOKEN_KEY);
+  setStatus(statusNode, "Сессия администратора истекла. Войдите снова.", "error");
+  setStatus(tokenStatus, "Требуется повторный вход администратора.", "error");
+}
+
 function askPositiveId(title) {
   const value = window.prompt(title, "");
   if (value === null) return null;
@@ -107,6 +120,10 @@ async function runAdminRequest(url, options = {}, statusNode = actionsStatus) {
     const data = await readResponseBody(response);
 
     if (!response.ok) {
+      if (isAuthError(response, data)) {
+        handleAuthError(statusNode);
+        return { ok: false, data };
+      }
       setStatus(statusNode, `Ошибка запроса${errorDetail(response, data)}`, "error");
       return { ok: false, data };
     }
@@ -194,6 +211,10 @@ createCarForm.addEventListener("submit", async (event) => {
     const data = await readResponseBody(response);
 
     if (!response.ok) {
+      if (isAuthError(response, data)) {
+        handleAuthError(createCarStatus);
+        return;
+      }
       setStatus(createCarStatus, `Ошибка создания машины${errorDetail(response, data)}`, "error");
       return;
     }

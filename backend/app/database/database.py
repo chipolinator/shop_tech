@@ -125,6 +125,29 @@ def purchase_car(username: str, car_id: int):
         return {"message": "del from cart"}
 
 
+def purchase_all_cart(username: str):
+    with Session(engine) as session:
+        user = session.exec(select(UserDB).where(
+            UserDB.username == username)).first()
+        if user is None:
+            return {"items_count": 0, "total_price": 0}
+
+        cart_items = session.exec(
+            select(CartItem, Car)
+            .join(Car, CartItem.car_id == Car.id)
+            .where(CartItem.user_id == user.id)
+        ).all()
+
+        total_price = sum(int(item.Car.price) for item in cart_items)
+        items_count = len(cart_items)
+
+        for item in cart_items:
+            session.delete(item.CartItem)
+        session.commit()
+
+        return {"items_count": items_count, "total_price": total_price}
+
+
 def create_admin(name: str, password: str):
     with Session(engine) as session:
         statement = select(Admin).where(Admin.username == name)

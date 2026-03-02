@@ -1,8 +1,18 @@
-from passlib.context import CryptContext
+import bcrypt as bcrypt_module
 import jwt
+from fastapi import HTTPException, status
+from passlib.context import CryptContext
 from jwt.exceptions import InvalidTokenError
 from config import settings
 from datetime import timedelta, datetime, timezone
+
+# Compatibility shim for passlib + bcrypt>=4.1 where __about__ is removed.
+if not hasattr(bcrypt_module, "__about__"):
+    class _BcryptAbout:
+        __version__ = getattr(bcrypt_module, "__version__", "unknown")
+
+    bcrypt_module.__about__ = _BcryptAbout()
+
 pwd_context = CryptContext(
     schemes=["bcrypt"],
     deprecated="auto",
@@ -32,13 +42,22 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
     return encoded_jwt
 
 
+def _credentials_exception() -> HTTPException:
+    return HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+
 def decode_token(token: str):
     try:
         payload = jwt.decode(token, settings.SECRET_KEY,
                              algorithms=[settings.ALGORITHM])
-        username = payload.get("sub")
-        if username is None:
-            raise credentials_exception
     except InvalidTokenError:
-        raise credentials_exception
-    return username
+        raise _credentials_exception()
+
+    username = payload.get("sub")
+    if not username:
+        raise _credentials_exception()
+    return str(username)
