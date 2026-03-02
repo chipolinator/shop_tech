@@ -31,23 +31,26 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #fff;
+  background:
+    radial-gradient(1100px 360px at -10% -20%, #ffffff 0%, transparent 64%),
+    radial-gradient(980px 340px at 112% -18%, #eef1f5 0%, transparent 62%),
+    linear-gradient(160deg, #f7f8fa 0%, #eef1f4 50%, #f9fafb 100%);
 }
 
 body::before {
-  content: none;
+  content: "";
   position: fixed;
   inset: 0;
   pointer-events: none;
   background:
     repeating-linear-gradient(
       90deg,
-      rgba(255, 255, 255, 0.16) 0,
-      rgba(255, 255, 255, 0.16) 1px,
+      rgba(255, 255, 255, 0.15) 0,
+      rgba(255, 255, 255, 0.15) 1px,
       transparent 1px,
-      transparent 28px
+      transparent 30px
     );
-  opacity: 0.38;
+  opacity: 0.26;
   z-index: -1;
 }
 
@@ -171,12 +174,12 @@ body::before {
 }
 
 .card {
-  background: linear-gradient(170deg, #fff9fa 0%, #fff3f5 100%);
-  border: 1px solid #e3cfd4;
+  background: linear-gradient(165deg, #ffffff 0%, #f6f4f5 100%);
+  border: 1px solid #ddd7da;
   border-radius: 16px;
   padding: 1rem;
   box-shadow:
-    0 10px 24px rgba(77, 27, 35, 0.08),
+    0 10px 24px rgba(56, 42, 46, 0.08),
     0 1px 0 rgba(255, 255, 255, 0.7) inset;
 }
 
@@ -334,6 +337,18 @@ button:disabled {
   gap: 0.9rem;
 }
 
+.auth-split {
+  grid-template-columns: minmax(320px, 1.2fr) minmax(280px, 0.9fr);
+  align-items: start;
+}
+
+.auth-split .login-card {
+  max-width: 430px;
+  width: 100%;
+  justify-self: end;
+  padding: 0.9rem;
+}
+
 .controls {
   display: flex;
   gap: 0.56rem;
@@ -477,6 +492,11 @@ button:disabled {
 
   .split {
     grid-template-columns: 1fr;
+  }
+
+  .auth-split .login-card {
+    max-width: none;
+    justify-self: stretch;
   }
 
   .topbar .container {

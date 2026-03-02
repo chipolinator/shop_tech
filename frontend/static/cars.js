@@ -50,7 +50,13 @@ function errorDetail(response, data) {
     return `: ${data.detail}`;
   }
   if (typeof data === "string" && data.trim()) {
-    return `: ${data}`;
+    const normalized = data.replace(/\s+/g, " ").trim();
+    const isHtmlError = /<html[\s>]|<!doctype html>/i.test(normalized);
+    if (isHtmlError) {
+      return ` (HTTP ${response.status})`;
+    }
+    const shortText = normalized.length > 180 ? `${normalized.slice(0, 180)}...` : normalized;
+    return `: ${shortText}`;
   }
   return ` (HTTP ${response.status})`;
 }
