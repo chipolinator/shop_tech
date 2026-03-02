@@ -1,14 +1,21 @@
 const API_BASE = `/api`;
 const USER_TOKEN_KEY = "shoptech_user_token";
+const GUEST_CART_KEY = "shoptech_guest_cart";
 const ENDPOINTS = {
+  listCars: `${API_BASE}/cars/all`,
   cart: `${API_BASE}/cars/cart`,
-  buy: `${API_BASE}/cars/buy`,
+  buyAll: `${API_BASE}/cars/buy_all`,
 };
 
 const refreshButton = document.getElementById("refresh-cart");
 const goToCarsButton = document.getElementById("go-to-cars");
+const buyAllButton = document.getElementById("buy-all");
 const status = document.getElementById("cart-status");
 const cartList = document.getElementById("cart-list");
+const cartCount = document.getElementById("cart-count");
+const cartTotal = document.getElementById("cart-total");
+
+let currentCartItems = [];
 
 function setStatus(text, type = "") {
   status.textContent = text;
@@ -26,6 +33,18 @@ function escapeHtml(value) {
 
 function getUserToken() {
   return localStorage.getItem(USER_TOKEN_KEY) || "";
+}
+
+function getGuestCartIds() {
+  const raw = localStorage.getItem(GUEST_CART_KEY);
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return [...new Set(parsed.map((id) => Number(id)).filter((id) => Number.isInteger(id) && id > 0))];
+  } catch {
+    return [];
+  }
 }
 
 function buildImageUrl(imagePath) {
@@ -68,9 +87,23 @@ function isAuthError(response, data) {
   );
 }
 
+function formatPrice(value) {
+  return Number(value || 0).toLocaleString("ru-RU");
+}
+
+function updateSummary(cars) {
+  const total = cars.reduce((sum, car) => sum + Number(car.price || 0), 0);
+  cartCount.textContent = String(cars.length);
+  cartTotal.textContent = `${formatPrice(total)} ₽`;
+  buyAllButton.disabled = cars.length === 0;
+}
+
 function renderCart(cars) {
+  currentCartItems = cars;
+  updateSummary(cars);
+
   if (!cars.length) {
-    cartList.innerHTML = '<article class="card empty-state">Корзина пуста.</article>';
+    cartList.innerHTML = '<li class="cart-empty">Корзина пуста.</li>';
     return;
   }
 
@@ -79,44 +112,68 @@ function renderCart(cars) {
       const title = `${escapeHtml(car.brand)} ${escapeHtml(car.model)}`;
       const imageUrl = buildImageUrl(car.image_path);
       const imageTag = imageUrl
-        ? `<img class="car-image" src="${escapeHtml(imageUrl)}" alt="${title}" loading="lazy">`
-        : '<div class="car-image placeholder">Без изображения</div>';
-      const carId = Number(car.car_id);
-      const hasValidCarId = Number.isInteger(carId) && carId > 0;
-      const buyButton = hasValidCarId
-        ? `
-          <div class="controls">
-            <button type="button" data-action="buy" data-car-id="${carId}">Купить</button>
-          </div>
-        `
-        : "";
+        ? `<img class="cart-item-thumb" src="${escapeHtml(imageUrl)}" alt="${title}" loading="lazy">`
+        : '<div class="cart-item-thumb placeholder">Нет фото</div>';
 
       return `
-        <article class="card car-card">
-          ${imageTag}
-          <h2>${title}</h2>
-          <p><strong>Цена:</strong> ${escapeHtml(car.price)}</p>
-          <p class="muted"><strong>Car ID:</strong> ${escapeHtml(car.car_id ?? "n/a")}</p>
-          <p class="muted"><strong>Cart Item ID:</strong> ${escapeHtml(car.cart_item_id ?? "n/a")}</p>
-          ${buyButton}
-        </article>
+        <li class="cart-item-row">
+          <div class="cart-item-main">
+            ${imageTag}
+            <div>
+              <p class="cart-item-title">${title}</p>
+              <p class="cart-item-meta">ID: ${escapeHtml(car.car_id ?? "n/a")}</p>
+            </div>
+          </div>
+          <p class="cart-item-price">${formatPrice(car.price)} ₽</p>
+        </li>
       `;
     })
     .join("");
 }
 
-async function loadCart() {
-  const token = getUserToken();
-  if (!token) {
-    setStatus("Сначала войдите как пользователь на странице 'Вход'.", "error");
+async function loadGuestCart() {
+  const guestIds = getGuestCartIds();
+  if (!guestIds.length) {
+    renderCart([]);
+    setStatus("Гостевая корзина пуста. Вход нужен только для покупки.", "success");
     return;
   }
 
+  const response = await fetch(ENDPOINTS.listCars);
+  const data = await readResponseBody(response);
+
+  if (!response.ok || !Array.isArray(data)) {
+    setStatus(`Ошибка загрузки корзины${errorDetail(response, data)}`, "error");
+    return;
+  }
+
+  const guestItems = data
+    .filter((car) => guestIds.includes(Number(car.id)))
+    .map((car) => ({
+      car_id: car.id,
+      brand: car.brand,
+      model: car.model,
+      price: car.price,
+      image_path: car.image_path,
+      cart_item_id: `guest-${car.id}`,
+    }));
+
+  renderCart(guestItems);
+  setStatus(`Гостевая корзина: ${guestItems.length} шт. Для покупки выполните вход.`, "success");
+}
+
+async function loadCart() {
+  const token = getUserToken();
   refreshButton.disabled = true;
   goToCarsButton.disabled = true;
   setStatus("Загрузка корзины...");
 
   try {
+    if (!token) {
+      await loadGuestCart();
+      return;
+    }
+
     const response = await fetch(ENDPOINTS.cart, {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -125,8 +182,7 @@ async function loadCart() {
     if (!response.ok) {
       if (isAuthError(response, data)) {
         localStorage.removeItem(USER_TOKEN_KEY);
-        window.alert("Чтобы открыть корзину, войдите как пользователь на странице \"Вход\".");
-        setStatus("Требуется вход пользователя.", "error");
+        await loadGuestCart();
         return;
       }
 
@@ -149,16 +205,21 @@ async function loadCart() {
   }
 }
 
-async function buyCar(carId) {
+async function buyAllCart() {
+  if (!currentCartItems.length) {
+    setStatus("Корзина пуста.", "error");
+    return false;
+  }
+
   const token = getUserToken();
   if (!token) {
-    window.alert("Для покупки войдите как пользователь на странице \"Вход\".");
-    setStatus("Требуется вход пользователя.", "error");
+    window.alert("Покупка доступна только зарегистрированным пользователям. Выполните вход.");
+    setStatus("Для покупки требуется вход пользователя.", "error");
     return false;
   }
 
   try {
-    const response = await fetch(`${ENDPOINTS.buy}?car_id=${encodeURIComponent(carId)}`, {
+    const response = await fetch(ENDPOINTS.buyAll, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -167,8 +228,8 @@ async function buyCar(carId) {
     if (!response.ok) {
       if (isAuthError(response, data)) {
         localStorage.removeItem(USER_TOKEN_KEY);
-        window.alert("Для покупки войдите как пользователь на странице \"Вход\".");
-        setStatus("Требуется вход пользователя.", "error");
+        window.alert("Сессия истекла. Для покупки выполните вход пользователя.");
+        setStatus("Для покупки требуется вход пользователя.", "error");
         return false;
       }
 
@@ -176,7 +237,10 @@ async function buyCar(carId) {
       return false;
     }
 
-    setStatus("Покупка выполнена.", "success");
+    const purchasedCount = Number(data?.items_count ?? currentCartItems.length);
+    const totalPrice = Number(data?.total_price ?? 0);
+    renderCart([]);
+    setStatus(`Покупка оформлена: ${purchasedCount} шт. на сумму ${formatPrice(totalPrice)} ₽.`, "success");
     return true;
   } catch {
     setStatus("Нет соединения с backend.", "error");
@@ -184,25 +248,14 @@ async function buyCar(carId) {
   }
 }
 
-cartList.addEventListener("click", async (event) => {
-  const button = event.target.closest("button[data-action='buy']");
-  if (!button) return;
-
-  const carId = Number(button.dataset.carId);
-  if (!Number.isInteger(carId) || carId <= 0) return;
-
-  button.disabled = true;
-  const ok = await buyCar(carId);
-  button.disabled = false;
-
-  if (ok) {
-    await loadCart();
-  }
-});
-
 refreshButton.addEventListener("click", loadCart);
 goToCarsButton.addEventListener("click", () => {
   window.location.href = "/cars.html";
+});
+buyAllButton.addEventListener("click", async () => {
+  buyAllButton.disabled = true;
+  await buyAllCart();
+  buyAllButton.disabled = currentCartItems.length === 0;
 });
 
 loadCart();

@@ -22,7 +22,6 @@
   <main class="page-main">
     <section class="container">
       <h1 class="page-title">Корзина</h1>
-      <p class="subtitle">Машины, добавленные для покупки.</p>
 
       <div class="controls">
         <button id="refresh-cart" type="button">Обновить корзину</button>
@@ -30,7 +29,28 @@
         <p id="cart-status" class="status-line" role="status" aria-live="polite"></p>
       </div>
 
-      <section id="cart-list" class="cars-grid" aria-live="polite"></section>
+      <section class="cart-layout">
+        <section class="card cart-list-card">
+          <div class="cart-list-head">
+            <span>Товар</span>
+            <span>Цена</span>
+          </div>
+          <ul id="cart-list" class="cart-items" aria-live="polite"></ul>
+        </section>
+
+        <aside class="card cart-summary-card">
+          <h2>Итого</h2>
+          <p class="cart-summary-row">
+            <span>Позиций</span>
+            <strong id="cart-count">0</strong>
+          </p>
+          <p class="cart-summary-row">
+            <span>Сумма</span>
+            <strong id="cart-total">0 ₽</strong>
+          </p>
+          <button id="buy-all" type="button">Купить всю корзину</button>
+        </aside>
+      </section>
     </section>
   </main>
 

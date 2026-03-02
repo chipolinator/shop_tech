@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     PORT: int = 5000
     ADMIN_NAME: str = "admin"
     ADMIN_PASSWORD_HASH: str = "$2y$12$M7vvq0aPY994eVZyna5RoeU3TYGHK5Wqnfvra9TYSG7CstTeHFx42"
-    SECRET_KEY: str = "example_key"
+    SECRET_KEY: str = "shoptech_super_secret_key_min_32_chars"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     # DATABASE_URL: str = "sqlite:///./shop.db"

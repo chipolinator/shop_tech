@@ -1,5 +1,6 @@
 const API_BASE = `/api`;
 const USER_TOKEN_KEY = "shoptech_user_token";
+const GUEST_CART_KEY = "shoptech_guest_cart";
 const ENDPOINTS = {
   listCars: `${API_BASE}/cars/all`,
   addToCart: `${API_BASE}/cars/add_car`,
@@ -26,6 +27,32 @@ function escapeHtml(value) {
 
 function getUserToken() {
   return localStorage.getItem(USER_TOKEN_KEY) || "";
+}
+
+function getGuestCartIds() {
+  const raw = localStorage.getItem(GUEST_CART_KEY);
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return [...new Set(parsed.map((id) => Number(id)).filter((id) => Number.isInteger(id) && id > 0))];
+  } catch {
+    return [];
+  }
+}
+
+function saveGuestCartIds(ids) {
+  localStorage.setItem(GUEST_CART_KEY, JSON.stringify(ids));
+}
+
+function addGuestCarId(carId) {
+  const ids = getGuestCartIds();
+  if (ids.includes(carId)) {
+    return false;
+  }
+  ids.push(carId);
+  saveGuestCartIds(ids);
+  return true;
 }
 
 function buildImageUrl(imagePath) {
@@ -129,8 +156,13 @@ async function loadCars() {
 async function addCarToCart(carId) {
   const token = getUserToken();
   if (!token) {
-    setStatus("Сначала войдите как пользователь на странице 'Вход'.", "error");
-    return false;
+    const added = addGuestCarId(carId);
+    if (added) {
+      setStatus("Машина добавлена в корзину (гостевой режим).", "success");
+    } else {
+      setStatus("Эта машина уже есть в корзине (гостевой режим).");
+    }
+    return true;
   }
 
   const endpoint = ENDPOINTS.addToCart;
@@ -150,9 +182,13 @@ async function addCarToCart(carId) {
         (data && typeof data === "object" && data.detail === "Could not validate credentials");
       if (isAuthError) {
         localStorage.removeItem(USER_TOKEN_KEY);
-        window.alert("Чтобы добавить машину в корзину, войдите как пользователь на странице \"Вход\".");
-        setStatus("Требуется вход пользователя.", "error");
-        return false;
+        const added = addGuestCarId(carId);
+        if (added) {
+          setStatus("Сессия истекла: машина добавлена в гостевую корзину.", "success");
+        } else {
+          setStatus("Сессия истекла. Машина уже есть в гостевой корзине.", "error");
+        }
+        return true;
       }
 
       setStatus(`Ошибка действия${errorDetail(response, data)}`, "error");
