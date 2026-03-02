@@ -28,6 +28,11 @@ def on_startup():
     database.create_admin(settings.ADMIN_NAME, settings.ADMIN_PASSWORD_HASH)
 
 
+@app.get("/api/health")
+def health():
+    return {"status": "ok"}
+
+
 app.include_router(router.router, prefix="/api")
 Path("uploads").mkdir(exist_ok=True)
 

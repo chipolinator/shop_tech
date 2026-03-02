@@ -20,35 +20,46 @@
   </header>
 
   <main class="page-main">
-    <section class="container hero">
-      <div class="hero-text">
-        <h1>Аккаунт пользователя</h1>
-        <p class="subtitle">
-          На этой странице доступны регистрация и вход. Выберите действие в форме.
-        </p>
-      </div>
+    <section class="container">
+      <div class="split auth-split">
+        <article class="card register-card">
+          <h2>Регистрация</h2>
+          <form id="register-form" class="register-form" novalidate>
+            <label for="register-name">Имя</label>
+            <input id="register-name" name="name" type="text" placeholder="Введите имя" required autocomplete="username">
 
-      <div class="card" id="signup">
-        <h2 id="auth-card-title">Создать аккаунт</h2>
-        <p id="auth-help" class="subtitle">Новый пользователь: создайте аккаунт.</p>
-        <form id="auth-form" class="register-form" novalidate>
-          <label for="auth-action-slider">Действие</label>
-          <div id="auth-action-slider" class="auth-slider" role="group" aria-label="Выбор действия">
-            <span class="auth-slider-thumb" aria-hidden="true"></span>
-            <button class="auth-slider-option active" type="button" data-action="register" aria-pressed="true">Регистрация</button>
-            <button class="auth-slider-option" type="button" data-action="login" aria-pressed="false">Вход</button>
-          </div>
-          <input id="auth-action" name="action" type="hidden" value="register">
+            <label for="register-gender">Пол</label>
+            <select id="register-gender" name="gender" required>
+              <option value="" selected disabled>Выберите пол</option>
+              <option value="male">Мужской</option>
+              <option value="female">Женский</option>
+              <option value="other">Другой</option>
+            </select>
 
-          <label for="name">Имя</label>
-          <input id="name" name="name" type="text" placeholder="Введите имя" required autocomplete="username">
+            <label for="register-phone">Номер телефона</label>
+            <input id="register-phone" name="phone" type="tel" placeholder="+7 999 123 45 67" required autocomplete="tel">
 
-          <label for="password">Пароль</label>
-          <input id="password" name="password" type="password" placeholder="Введите пароль" required autocomplete="current-password">
+            <label for="register-password">Пароль</label>
+            <input id="register-password" name="password" type="password" placeholder="Минимум 6 символов" required minlength="6" autocomplete="new-password">
 
-          <button id="auth-submit" type="submit">Зарегистрироваться</button>
-          <p id="form-status" class="status-line" role="status" aria-live="polite"></p>
-        </form>
+            <button id="register-submit" type="submit">Зарегистрироваться</button>
+            <p id="register-status" class="status-line" role="status" aria-live="polite"></p>
+          </form>
+        </article>
+
+        <article class="card login-card">
+          <h2>Вход</h2>
+          <form id="login-form" class="register-form" novalidate>
+            <label for="login-name">Имя</label>
+            <input id="login-name" name="username" type="text" placeholder="Введите имя" required autocomplete="username">
+
+            <label for="login-password">Пароль</label>
+            <input id="login-password" name="password" type="password" placeholder="Введите пароль" required autocomplete="current-password">
+
+            <button id="login-submit" type="submit">Войти</button>
+            <p id="login-status" class="status-line" role="status" aria-live="polite"></p>
+          </form>
+        </article>
       </div>
     </section>
   </main>

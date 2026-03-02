@@ -1,20 +1,15 @@
 const API_BASE = `/api`;
 const USER_TOKEN_KEY = "shoptech_user_token";
 
-const form = document.getElementById("auth-form");
-const actionInput = document.getElementById("auth-action");
-const actionSlider = document.getElementById("auth-action-slider");
-const actionOptions = Array.from(document.querySelectorAll(".auth-slider-option"));
-const nameInput = document.getElementById("name");
-const passwordInput = document.getElementById("password");
-const status = document.getElementById("form-status");
-const button = document.getElementById("auth-submit");
-const cardTitle = document.getElementById("auth-card-title");
-const helpText = document.getElementById("auth-help");
+const registerForm = document.getElementById("register-form");
+const registerStatus = document.getElementById("register-status");
 
-function setStatus(text, type = "") {
-  status.textContent = text;
-  status.className = type ? `status-line ${type}` : "status-line";
+const loginForm = document.getElementById("login-form");
+const loginStatus = document.getElementById("login-status");
+
+function setStatus(node, text, type = "") {
+  node.textContent = text;
+  node.className = type ? `status-line ${type}` : "status-line";
 }
 
 function readResponseError(response, data, prefix) {
@@ -22,39 +17,29 @@ function readResponseError(response, data, prefix) {
   return `${prefix}${detail}`;
 }
 
-function applyActionUi(action) {
-  if (action === "login") {
-    cardTitle.textContent = "Вход";
-    helpText.textContent = "Уже зарегистрированы: войдите в аккаунт.";
-    button.textContent = "Войти";
-    passwordInput.placeholder = "Введите пароль";
-    passwordInput.minLength = 1;
-    return;
-  }
-
-  cardTitle.textContent = "Создать аккаунт";
-  helpText.textContent = "Новый пользователь: создайте аккаунт.";
-  button.textContent = "Зарегистрироваться";
-  passwordInput.placeholder = "Минимум 6 символов";
-  passwordInput.minLength = 6;
+function normalizePhone(phone) {
+  return phone.replace(/[^\d+]/g, "");
 }
 
-function validate(action, name, password) {
+function validateRegistration(name, gender, phone, password) {
   if (!name) return "Введите имя.";
+  if (!gender) return "Выберите пол.";
+  if (!phone) return "Введите номер телефона.";
   if (!password) return "Введите пароль.";
-
-  if (action === "register") {
-    if (name.length < 2) return "Имя должно быть минимум 2 символа.";
-    if (password.length < 6) return "Пароль должен быть минимум 6 символов.";
+  if (name.length < 2) return "Имя должно быть минимум 2 символа.";
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length < 10 || digits.length > 15) {
+    return "Введите корректный номер телефона.";
   }
+  if (password.length < 6) return "Пароль должен быть минимум 6 символов.";
   return "";
 }
 
-async function registerUser(name, password) {
+async function registerUser(name, gender, phone, password) {
   const response = await fetch(`${API_BASE}/reg/reg_user`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name, password }),
+    body: JSON.stringify({ name, gender, phone, password }),
   });
   if (response.ok) return { ok: true };
 
@@ -62,9 +47,9 @@ async function registerUser(name, password) {
   return { ok: false, message: readResponseError(response, data, "Ошибка регистрации") };
 }
 
-async function loginUser(name, password) {
+async function loginUser(username, password) {
   const body = new URLSearchParams();
-  body.set("username", name);
+  body.set("username", username);
   body.set("password", password);
 
   const response = await fetch(`${API_BASE}/reg/token`, {
@@ -81,63 +66,71 @@ async function loginUser(name, password) {
   return { ok: true };
 }
 
-function setAction(action) {
-  const nextAction = action === "login" ? "login" : "register";
-  actionInput.value = nextAction;
-  actionSlider.classList.toggle("is-login", nextAction === "login");
-  actionOptions.forEach((option) => {
-    const isActive = option.dataset.action === nextAction;
-    option.classList.toggle("active", isActive);
-    option.setAttribute("aria-pressed", String(isActive));
-  });
-  applyActionUi(nextAction);
-  setStatus("");
-}
-
-actionOptions.forEach((option) => {
-  option.addEventListener("click", () => {
-    setAction(option.dataset.action);
-  });
-});
-
-form.addEventListener("submit", async (event) => {
+registerForm.addEventListener("submit", async (event) => {
   event.preventDefault();
+  const button = registerForm.querySelector("button[type='submit']");
+  const name = registerForm.name.value.trim();
+  const gender = registerForm.gender.value;
+  const phoneRaw = registerForm.phone.value.trim();
+  const phone = normalizePhone(phoneRaw);
+  const password = registerForm.password.value;
 
-  const action = actionInput.value;
-  const name = nameInput.value.trim();
-  const password = passwordInput.value;
-  const validationError = validate(action, name, password);
+  const validationError = validateRegistration(name, gender, phone, password);
   if (validationError) {
-    setStatus(validationError, "error");
+    setStatus(registerStatus, validationError, "error");
     return;
   }
 
   button.disabled = true;
-  setStatus(action === "login" ? "Выполняю вход..." : "Создаю аккаунт...");
+  setStatus(registerStatus, "Создаю аккаунт...");
 
   try {
-    const result = action === "login"
-      ? await loginUser(name, password)
-      : await registerUser(name, password);
-
+    const result = await registerUser(name, gender, phone, password);
     if (!result.ok) {
-      setStatus(result.message, "error");
+      setStatus(registerStatus, result.message, "error");
       return;
     }
 
-    form.reset();
-    setAction(action);
-    setStatus(action === "login" ? "Вход выполнен." : "Аккаунт успешно создан.", "success");
+    registerForm.reset();
+    setStatus(registerStatus, "Аккаунт успешно создан.", "success");
   } catch {
-    setStatus("Нет подключения к серверу. Проверьте, что backend запущен.", "error");
+    setStatus(registerStatus, "Нет подключения к серверу. Проверьте, что backend запущен.", "error");
+  } finally {
+    button.disabled = false;
+  }
+});
+
+loginForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const button = loginForm.querySelector("button[type='submit']");
+  const username = loginForm.username.value.trim();
+  const password = loginForm.password.value;
+
+  if (!username || !password) {
+    setStatus(loginStatus, "Введите имя и пароль.", "error");
+    return;
+  }
+
+  button.disabled = true;
+  setStatus(loginStatus, "Выполняю вход...");
+
+  try {
+    const result = await loginUser(username, password);
+    if (!result.ok) {
+      setStatus(loginStatus, result.message, "error");
+      return;
+    }
+
+    loginForm.reset();
+    setStatus(loginStatus, "Вход выполнен.", "success");
+  } catch {
+    setStatus(loginStatus, "Нет подключения к серверу. Проверьте, что backend запущен.", "error");
   } finally {
     button.disabled = false;
   }
 });
 
 const requestedMode = new URLSearchParams(window.location.search).get("mode");
-if (requestedMode === "login" || requestedMode === "register") {
-  setAction(requestedMode);
-} else {
-  setAction(actionInput.value);
+if (requestedMode === "login") {
+  document.getElementById("login-name")?.focus();
 }

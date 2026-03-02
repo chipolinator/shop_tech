@@ -44,29 +44,29 @@
         <article class="card">
           <h2>Создать машину</h2>
           <form id="create-car-form" class="stack-form" novalidate>
-            <label for="car-brand">Brand</label>
-            <input id="car-brand" name="brand" type="text" placeholder="BMW" required>
+            <label for="car-brand">Марка</label>
+            <input id="car-brand" name="brand" type="text" placeholder="Например: BMW" required>
 
-            <label for="car-model">Model</label>
-            <input id="car-model" name="model" type="text" placeholder="M3" required>
+            <label for="car-model">Модель</label>
+            <input id="car-model" name="model" type="text" placeholder="Например: M3" required>
 
-            <label for="car-power">Power</label>
+            <label for="car-power">Мощность (л.с.)</label>
             <input id="car-power" name="power" type="number" min="1" step="1" required>
 
-            <label for="car-displacement">Displacement</label>
+            <label for="car-displacement">Объём двигателя (л)</label>
             <input id="car-displacement" name="displacement" type="number" min="0.1" step="0.1" required>
 
-            <label for="car-drive">Drive</label>
+            <label for="car-drive">Привод</label>
             <select id="car-drive" name="drive" required>
-              <option value="front">front</option>
-              <option value="rear">rear</option>
-              <option value="all">all</option>
+              <option value="front">передний</option>
+              <option value="rear">задний</option>
+              <option value="all">полный</option>
             </select>
 
-            <label for="car-price">Price</label>
-            <input id="car-price" name="price" type="number" min="1" step="1" required>
+            <label for="car-price">Цена</label>
+            <input id="car-price" name="price" type="text" inputmode="numeric" placeholder="20 000" autocomplete="off" required>
 
-            <label for="car-image">Image (PNG/JPEG)</label>
+            <label for="car-image">Изображение (PNG/JPEG)</label>
             <input id="car-image" name="image" type="file" accept="image/png,image/jpeg" required>
 
             <button type="submit">Создать машину</button>

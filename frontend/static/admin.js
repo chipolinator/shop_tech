@@ -13,6 +13,7 @@ const tokenStatus = document.getElementById("admin-token-status");
 
 const createCarForm = document.getElementById("create-car-form");
 const createCarStatus = document.getElementById("create-car-status");
+const carPriceInput = document.getElementById("car-price");
 
 const adminActions = document.createElement("div");
 adminActions.className = "stack-form";
@@ -78,6 +79,15 @@ function askPositiveId(title) {
   }
   return id;
 }
+
+function formatNumberWithSpaces(rawValue) {
+  const digitsOnly = String(rawValue).replace(/\D/g, "");
+  return digitsOnly.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+}
+
+carPriceInput.addEventListener("input", () => {
+  carPriceInput.value = formatNumberWithSpaces(carPriceInput.value);
+});
 
 async function runAdminRequest(url, options = {}, statusNode = actionsStatus) {
   const headers = getAuthHeaders();
@@ -159,6 +169,13 @@ createCarForm.addEventListener("submit", async (event) => {
   }
 
   const formData = new FormData(createCarForm);
+  const normalizedPrice = String(formData.get("price") ?? "").replace(/\D/g, "");
+  if (!normalizedPrice || Number(normalizedPrice) <= 0) {
+    setStatus(createCarStatus, "Введите корректную цену (например: 20 000).", "error");
+    return;
+  }
+  formData.set("price", normalizedPrice);
+
   const image = formData.get("image");
   if (!(image instanceof File) || image.size === 0) {
     setStatus(createCarStatus, "Выберите изображение PNG/JPEG.", "error");
