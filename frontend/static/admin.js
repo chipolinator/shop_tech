@@ -13,7 +13,6 @@ const tokenStatus = document.getElementById("admin-token-status");
 
 const createCarForm = document.getElementById("create-car-form");
 const createCarStatus = document.getElementById("create-car-status");
-const createCarOutput = document.getElementById("create-car-output");
 
 const adminActions = document.createElement("div");
 adminActions.className = "stack-form";
@@ -25,7 +24,7 @@ adminActions.innerHTML = `
   </div>
   <p id="admin-actions-status" class="status-line" role="status" aria-live="polite"></p>
 `;
-createCarOutput.insertAdjacentElement("afterend", adminActions);
+createCarForm.insertAdjacentElement("afterend", adminActions);
 
 const loadUsersButton = document.getElementById("admin-load-users");
 const deleteUserButton = document.getElementById("admin-delete-user");
@@ -35,10 +34,6 @@ const actionsStatus = document.getElementById("admin-actions-status");
 function setStatus(node, text, type = "") {
   node.textContent = text;
   node.className = type ? `status-line ${type}` : "status-line";
-}
-
-function formatJson(value) {
-  return JSON.stringify(value, null, 2);
 }
 
 function getAdminToken() {
@@ -183,11 +178,9 @@ createCarForm.addEventListener("submit", async (event) => {
 
     if (!response.ok) {
       setStatus(createCarStatus, `Ошибка создания машины${errorDetail(response, data)}`, "error");
-      createCarOutput.textContent = formatJson(data ?? {});
       return;
     }
 
-    createCarOutput.textContent = formatJson(data);
     setStatus(createCarStatus, "Машина успешно добавлена.", "success");
     createCarForm.reset();
   } catch {
@@ -203,7 +196,6 @@ loadUsersButton.addEventListener("click", async () => {
 
   const result = await runAdminRequest(ENDPOINTS.allUsers);
   if (result.ok) {
-    createCarOutput.textContent = formatJson(result.data ?? []);
     const count = Array.isArray(result.data) ? result.data.length : 0;
     setStatus(actionsStatus, `Пользователей получено: ${count}.`, "success");
   }
@@ -222,7 +214,6 @@ deleteUserButton.addEventListener("click", async () => {
     method: "DELETE",
   });
   if (result.ok) {
-    createCarOutput.textContent = formatJson(result.data ?? { deleted_user_id: id });
     setStatus(actionsStatus, `Пользователь ${id} удалён.`, "success");
   }
 
@@ -240,7 +231,6 @@ deleteCarButton.addEventListener("click", async () => {
     method: "DELETE",
   });
   if (result.ok) {
-    createCarOutput.textContent = formatJson(result.data ?? { deleted_car_id: id });
     setStatus(actionsStatus, `Машина ${id} удалена.`, "success");
   }
 

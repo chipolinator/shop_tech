@@ -32,11 +32,13 @@
         <h2 id="auth-card-title">Создать аккаунт</h2>
         <p id="auth-help" class="subtitle">Новый пользователь: создайте аккаунт.</p>
         <form id="auth-form" class="register-form" novalidate>
-          <label for="auth-action">Действие</label>
-          <select id="auth-action" name="action" required>
-            <option value="register">Регистрация</option>
-            <option value="login">Вход</option>
-          </select>
+          <label for="auth-action-slider">Действие</label>
+          <div id="auth-action-slider" class="auth-slider" role="group" aria-label="Выбор действия">
+            <span class="auth-slider-thumb" aria-hidden="true"></span>
+            <button class="auth-slider-option active" type="button" data-action="register" aria-pressed="true">Регистрация</button>
+            <button class="auth-slider-option" type="button" data-action="login" aria-pressed="false">Вход</button>
+          </div>
+          <input id="auth-action" name="action" type="hidden" value="register">
 
           <label for="name">Имя</label>
           <input id="name" name="name" type="text" placeholder="Введите имя" required autocomplete="username">
