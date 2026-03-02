@@ -1,12 +1,7 @@
 from sqlmodel import create_engine, Session, SQLModel, select, delete
 from config import settings
 import models
-from schemas.models import User as UserDB, Admin, Car, CartItem
-# from schemas.user import User as UserDB
-# from schemas.admin import Admin
-#
-# from schemas.car import Car
-# from schemas.cart import CartItem
+from schemas.models import User as UserDB, Admin, Car
 import utils.security
 
 
@@ -73,79 +68,6 @@ def delete_car_by_id(id: int):
         statement = delete(Car).where(Car.id == id)
         result = session.exec(statement)
         session.commit()
-
-
-def add_to_cart(username: str, car_id: int):
-    with Session(engine) as session:
-        user = session.exec(select(UserDB).where(
-            UserDB.username == username)).first()
-        cart_item = CartItem(user_id=user.id, car_id=car_id)
-        session.add(cart_item)
-        session.commit()
-        session.refresh(cart_item)
-        return cart_item
-
-
-def user_cart(username: str):
-    with Session(engine) as session:
-        user = session.exec(select(UserDB).where(
-            UserDB.username == username)).first()
-        cart_items = session.exec(
-            select(CartItem, Car)
-            .join(Car, CartItem.car_id == Car.id)
-            .where(CartItem.user_id == user.id)
-        ).all()
-
-        return [
-            {
-                "cart_item_id": item.CartItem.id,
-                "car_id": item.Car.id,
-                "brand": item.Car.brand,
-                "model": item.Car.model,
-                "price": item.Car.price,
-                "image_path": item.Car.image_path,
-            }
-            for item in cart_items
-        ]
-
-
-def purchase_car(username: str, car_id: int):
-    with Session(engine) as session:
-        user = session.exec(select(UserDB).where(
-            UserDB.username == username)).first()
-
-        cart_item = session.exec(
-            select(CartItem)
-            .where(CartItem.user_id == user.id)
-            .where(CartItem.car_id == car_id)
-        ).first()
-
-        session.delete(cart_item)
-        session.commit()
-        return {"message": "del from cart"}
-
-
-def purchase_all_cart(username: str):
-    with Session(engine) as session:
-        user = session.exec(select(UserDB).where(
-            UserDB.username == username)).first()
-        if user is None:
-            return {"items_count": 0, "total_price": 0}
-
-        cart_items = session.exec(
-            select(CartItem, Car)
-            .join(Car, CartItem.car_id == Car.id)
-            .where(CartItem.user_id == user.id)
-        ).all()
-
-        total_price = sum(int(item.Car.price) for item in cart_items)
-        items_count = len(cart_items)
-
-        for item in cart_items:
-            session.delete(item.CartItem)
-        session.commit()
-
-        return {"items_count": items_count, "total_price": total_price}
 
 
 def create_admin(name: str, password: str):

@@ -1,9 +1,7 @@
 const API_BASE = `/api`;
-const USER_TOKEN_KEY = "shoptech_user_token";
 const GUEST_CART_KEY = "shoptech_guest_cart";
 const ENDPOINTS = {
   listCars: `${API_BASE}/cars/all`,
-  addToCart: `${API_BASE}/cars/add_car`,
 };
 
 const refreshButton = document.getElementById("refresh-cars");
@@ -23,10 +21,6 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
-}
-
-function getUserToken() {
-  return localStorage.getItem(USER_TOKEN_KEY) || "";
 }
 
 function getGuestCartIds() {
@@ -154,53 +148,13 @@ async function loadCars() {
 }
 
 async function addCarToCart(carId) {
-  const token = getUserToken();
-  if (!token) {
-    const added = addGuestCarId(carId);
-    if (added) {
-      setStatus("Машина добавлена в корзину (гостевой режим).", "success");
-    } else {
-      setStatus("Эта машина уже есть в корзине (гостевой режим).");
-    }
-    return true;
+  const added = addGuestCarId(carId);
+  if (added) {
+    setStatus("Машина добавлена в корзину.", "success");
+  } else {
+    setStatus("Эта машина уже есть в корзине.");
   }
-
-  const endpoint = ENDPOINTS.addToCart;
-  const method = "POST";
-  const successText = "Машина добавлена в корзину.";
-
-  try {
-    const response = await fetch(`${endpoint}?car_id=${encodeURIComponent(carId)}`, {
-      method,
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const data = await readResponseBody(response);
-
-    if (!response.ok) {
-      const isAuthError =
-        response.status === 401 ||
-        (data && typeof data === "object" && data.detail === "Could not validate credentials");
-      if (isAuthError) {
-        localStorage.removeItem(USER_TOKEN_KEY);
-        const added = addGuestCarId(carId);
-        if (added) {
-          setStatus("Сессия истекла: машина добавлена в гостевую корзину.", "success");
-        } else {
-          setStatus("Сессия истекла. Машина уже есть в гостевой корзине.", "error");
-        }
-        return true;
-      }
-
-      setStatus(`Ошибка действия${errorDetail(response, data)}`, "error");
-      return false;
-    }
-
-    setStatus(successText, "success");
-    return true;
-  } catch {
-    setStatus("Нет соединения с backend.", "error");
-    return false;
-  }
+  return true;
 }
 
 carsList.addEventListener("click", async (event) => {

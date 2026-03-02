@@ -1,10 +1,7 @@
 const API_BASE = `/api`;
-const USER_TOKEN_KEY = "shoptech_user_token";
 const GUEST_CART_KEY = "shoptech_guest_cart";
 const ENDPOINTS = {
   listCars: `${API_BASE}/cars/all`,
-  cart: `${API_BASE}/cars/cart`,
-  buyAll: `${API_BASE}/cars/buy_all`,
 };
 
 const refreshButton = document.getElementById("refresh-cart");
@@ -31,10 +28,6 @@ function escapeHtml(value) {
     .replaceAll("'", "&#39;");
 }
 
-function getUserToken() {
-  return localStorage.getItem(USER_TOKEN_KEY) || "";
-}
-
 function getGuestCartIds() {
   const raw = localStorage.getItem(GUEST_CART_KEY);
   if (!raw) return [];
@@ -45,6 +38,10 @@ function getGuestCartIds() {
   } catch {
     return [];
   }
+}
+
+function clearGuestCart() {
+  localStorage.removeItem(GUEST_CART_KEY);
 }
 
 function buildImageUrl(imagePath) {
@@ -80,13 +77,6 @@ function errorDetail(response, data) {
   return ` (HTTP ${response.status})`;
 }
 
-function isAuthError(response, data) {
-  return (
-    response.status === 401 ||
-    (data && typeof data === "object" && data.detail === "Could not validate credentials")
-  );
-}
-
 function formatPrice(value) {
   return Number(value || 0).toLocaleString("ru-RU");
 }
@@ -95,7 +85,6 @@ function updateSummary(cars) {
   const total = cars.reduce((sum, car) => sum + Number(car.price || 0), 0);
   cartCount.textContent = String(cars.length);
   cartTotal.textContent = `${formatPrice(total)} ₽`;
-  buyAllButton.disabled = cars.length === 0;
 }
 
 function renderCart(cars) {
@@ -131,72 +120,39 @@ function renderCart(cars) {
     .join("");
 }
 
-async function loadGuestCart() {
-  const guestIds = getGuestCartIds();
-  if (!guestIds.length) {
-    renderCart([]);
-    setStatus("Гостевая корзина пуста. Вход нужен только для покупки.", "success");
-    return;
-  }
-
-  const response = await fetch(ENDPOINTS.listCars);
-  const data = await readResponseBody(response);
-
-  if (!response.ok || !Array.isArray(data)) {
-    setStatus(`Ошибка загрузки корзины${errorDetail(response, data)}`, "error");
-    return;
-  }
-
-  const guestItems = data
-    .filter((car) => guestIds.includes(Number(car.id)))
-    .map((car) => ({
-      car_id: car.id,
-      brand: car.brand,
-      model: car.model,
-      price: car.price,
-      image_path: car.image_path,
-      cart_item_id: `guest-${car.id}`,
-    }));
-
-  renderCart(guestItems);
-  setStatus(`Гостевая корзина: ${guestItems.length} шт. Для покупки выполните вход.`, "success");
-}
-
 async function loadCart() {
-  const token = getUserToken();
+  const guestIds = getGuestCartIds();
   refreshButton.disabled = true;
   goToCarsButton.disabled = true;
   setStatus("Загрузка корзины...");
 
   try {
-    if (!token) {
-      await loadGuestCart();
+    if (!guestIds.length) {
+      renderCart([]);
+      setStatus("Корзина пуста.", "success");
       return;
     }
 
-    const response = await fetch(ENDPOINTS.cart, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const response = await fetch(ENDPOINTS.listCars);
     const data = await readResponseBody(response);
 
-    if (!response.ok) {
-      if (isAuthError(response, data)) {
-        localStorage.removeItem(USER_TOKEN_KEY);
-        await loadGuestCart();
-        return;
-      }
-
+    if (!response.ok || !Array.isArray(data)) {
       setStatus(`Ошибка загрузки корзины${errorDetail(response, data)}`, "error");
       return;
     }
 
-    if (!Array.isArray(data)) {
-      setStatus("Неверный формат данных корзины.", "error");
-      return;
-    }
+    const items = data
+      .filter((car) => guestIds.includes(Number(car.id)))
+      .map((car) => ({
+        car_id: car.id,
+        brand: car.brand,
+        model: car.model,
+        price: car.price,
+        image_path: car.image_path,
+      }));
 
-    renderCart(data);
-    setStatus(`В корзине машин: ${data.length}.`, "success");
+    renderCart(items);
+    setStatus(`В корзине товаров: ${items.length}.`, "success");
   } catch {
     setStatus("Нет соединения с backend.", "error");
   } finally {
@@ -206,46 +162,10 @@ async function loadCart() {
 }
 
 async function buyAllCart() {
-  if (!currentCartItems.length) {
-    setStatus("Корзина пуста.", "error");
-    return false;
-  }
-
-  const token = getUserToken();
-  if (!token) {
-    window.alert("Покупка доступна только зарегистрированным пользователям. Выполните вход.");
-    setStatus("Для покупки требуется вход пользователя.", "error");
-    return false;
-  }
-
-  try {
-    const response = await fetch(ENDPOINTS.buyAll, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const data = await readResponseBody(response);
-
-    if (!response.ok) {
-      if (isAuthError(response, data)) {
-        localStorage.removeItem(USER_TOKEN_KEY);
-        window.alert("Сессия истекла. Для покупки выполните вход пользователя.");
-        setStatus("Для покупки требуется вход пользователя.", "error");
-        return false;
-      }
-
-      setStatus(`Ошибка покупки${errorDetail(response, data)}`, "error");
-      return false;
-    }
-
-    const purchasedCount = Number(data?.items_count ?? currentCartItems.length);
-    const totalPrice = Number(data?.total_price ?? 0);
-    renderCart([]);
-    setStatus(`Покупка оформлена: ${purchasedCount} шт. на сумму ${formatPrice(totalPrice)} ₽.`, "success");
-    return true;
-  } catch {
-    setStatus("Нет соединения с backend.", "error");
-    return false;
-  }
+  const hadItems = currentCartItems.length > 0 || getGuestCartIds().length > 0;
+  clearGuestCart();
+  renderCart([]);
+  setStatus(hadItems ? "Корзина очищена." : "Корзина уже пуста.", "success");
 }
 
 refreshButton.addEventListener("click", loadCart);
@@ -254,8 +174,11 @@ goToCarsButton.addEventListener("click", () => {
 });
 buyAllButton.addEventListener("click", async () => {
   buyAllButton.disabled = true;
-  await buyAllCart();
-  buyAllButton.disabled = currentCartItems.length === 0;
+  try {
+    await buyAllCart();
+  } finally {
+    buyAllButton.disabled = false;
+  }
 });
 
 loadCart();
