@@ -4,17 +4,25 @@
 
 Выполняйте команды из папки `shop_tech`.
 
+Сначала подготовьте переменные окружения:
+
 ```bash
-docker-compose up --build
+cp .env.example .env
+```
+
+```bash
+docker compose up --build
+docker compose down
 ```
 
 После запуска:
+
 - Сайт: `http://localhost:80`
 <!-- - Swagger UI: `http://localhost:8000/docs` -->
 
 ## Доступный функционал
 
-- Открытие веб-страницы с формой регистрации.
+- Открытие веб-страницы аккаунта с выбором действия: регистрация или вход.
 - Регистрация пользователя через API: `POST /api/reg/reg_user`.
 - Авторизация пользователя: `POST /api/reg/token`.
 - Получение текущего пользователя: `GET /api/reg/me`.
