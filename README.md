@@ -4,10 +4,14 @@
 
 Выполняйте команды из папки `shop_tech`.
 
+Сначала подготовьте переменные окружения:
+
 ```bash
-docker-compose up --build
+cp .env.example .env
+```
 
-
+```bash
+docker compose up --build
 docker compose down
 ```
 
