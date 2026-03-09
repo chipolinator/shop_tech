@@ -75,6 +75,10 @@
     }
   }
 
+  function hasAnySession() {
+    return Boolean(getUserToken() || getAdminToken());
+  }
+
   function getSessionEntries() {
     const entries = [];
     const userName = decodeTokenSubject(getUserToken());
@@ -152,6 +156,10 @@
   }
 
   function syncNavigation() {
+    document.querySelectorAll(".nav-links").forEach((node) => {
+      node.hidden = !hasAnySession();
+    });
+
     document.querySelectorAll("[data-nav-role]").forEach((node) => {
       node.hidden = !canAccess(node.dataset.navRole);
     });
@@ -223,11 +231,21 @@
 
   function logoutUser() {
     clearUserToken();
+    if (getAdminToken()) return;
     redirectToLogin("login");
   }
 
   function logoutAdmin() {
     clearAdminToken();
+    if (window.location.pathname === "/admin.html") {
+      if (getUserToken()) {
+        window.location.replace("/cars.html");
+        return;
+      }
+      redirectToLogin("admin");
+      return;
+    }
+    if (getUserToken()) return;
     redirectToLogin("admin");
   }
 
