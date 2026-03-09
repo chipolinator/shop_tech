@@ -2,6 +2,7 @@
   const API_BASE = "/api";
   const USER_TOKEN_KEY = "shoptech_user_token";
   const ADMIN_TOKEN_KEY = "shoptech_admin_token";
+  const ACTIVE_SESSION_KEY = "shoptech_active_session";
   const LOGIN_PAGE_URL = "/index.html?mode=login";
   const ADMIN_LOGIN_PAGE_URL = "/index.html?mode=admin";
 
@@ -37,24 +38,77 @@
     return getStoredValue(ADMIN_TOKEN_KEY);
   }
 
+  function getActiveSessionKey() {
+    return getStoredValue(ACTIVE_SESSION_KEY);
+  }
+
+  function setActiveSessionKey(key) {
+    if (key) {
+      setStoredValue(ACTIVE_SESSION_KEY, key);
+      return;
+    }
+    removeStoredValue(ACTIVE_SESSION_KEY);
+  }
+
   function storeUserToken(token) {
+    removeStoredValue(ADMIN_TOKEN_KEY);
     setStoredValue(USER_TOKEN_KEY, token);
+    setActiveSessionKey("user");
     syncNavigation();
   }
 
   function storeAdminToken(token) {
+    removeStoredValue(USER_TOKEN_KEY);
     setStoredValue(ADMIN_TOKEN_KEY, token);
+    setActiveSessionKey("admin");
     syncNavigation();
   }
 
   function clearUserToken() {
     removeStoredValue(USER_TOKEN_KEY);
+    if (getActiveSessionKey() === "user") {
+      setActiveSessionKey(getAdminToken() ? "admin" : "");
+    }
     syncNavigation();
   }
 
   function clearAdminToken() {
     removeStoredValue(ADMIN_TOKEN_KEY);
+    if (getActiveSessionKey() === "admin") {
+      setActiveSessionKey(getUserToken() ? "user" : "");
+    }
     syncNavigation();
+  }
+
+  function reconcileStoredSessions() {
+    const userToken = getUserToken();
+    const adminToken = getAdminToken();
+
+    if (userToken && adminToken) {
+      const activeSession = getActiveSessionKey();
+      const preferredSession = activeSession === "admin" || window.location.pathname === "/admin.html"
+        ? "admin"
+        : "user";
+      if (preferredSession === "admin") {
+        removeStoredValue(USER_TOKEN_KEY);
+      } else {
+        removeStoredValue(ADMIN_TOKEN_KEY);
+      }
+      setActiveSessionKey(preferredSession);
+      return;
+    }
+
+    if (userToken) {
+      setActiveSessionKey("user");
+      return;
+    }
+
+    if (adminToken) {
+      setActiveSessionKey("admin");
+      return;
+    }
+
+    setActiveSessionKey("");
   }
 
   function decodeTokenSubject(token) {
@@ -250,6 +304,7 @@
   }
 
   function boot() {
+    reconcileStoredSessions();
     syncNavigation();
   }
 
