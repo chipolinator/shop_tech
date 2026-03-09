@@ -96,6 +96,37 @@ body::before {
   background: rgba(255, 255, 255, 0.08);
 }
 
+.session-summary {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  margin-left: auto;
+}
+
+.session-badge {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42rem;
+  padding: 0.28rem 0.7rem;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+.session-badge-role {
+  opacity: 0.78;
+}
+
+.session-badge-name {
+  font-size: 0.83rem;
+  font-weight: 700;
+}
+
 .nav-link {
   display: inline-flex;
   align-items: center;
@@ -198,7 +229,7 @@ body::before {
 .auth-slider {
   position: relative;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   border: 1px solid #e2c8ce;
   background: #f6e9ec;
   border-radius: 999px;
@@ -210,7 +241,7 @@ body::before {
   position: absolute;
   top: 2px;
   left: 2px;
-  width: calc(50% - 2px);
+  width: calc((100% - 4px) / 3);
   height: calc(100% - 4px);
   background: #fff;
   border-radius: 999px;
@@ -220,6 +251,10 @@ body::before {
 
 .auth-slider.is-login .auth-slider-thumb {
   transform: translateX(100%);
+}
+
+.auth-slider.is-admin .auth-slider-thumb {
+  transform: translateX(200%);
 }
 
 .auth-slider .auth-slider-option {
@@ -660,6 +695,12 @@ button:disabled {
   .nav-links {
     width: 100%;
     border-radius: 14px;
+  }
+
+  .session-summary {
+    width: 100%;
+    justify-content: flex-start;
+    margin-left: 0;
   }
 }
 

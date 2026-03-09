@@ -1,11 +1,13 @@
 const API_BASE = `/api`;
-const USER_TOKEN_KEY = "shoptech_user_token";
+const authApi = window.ShopTechAuth;
 
 const registerForm = document.getElementById("register-form");
 const registerStatus = document.getElementById("register-status");
 
 const loginForm = document.getElementById("login-form");
 const loginStatus = document.getElementById("login-status");
+const adminLoginForm = document.getElementById("admin-login-form");
+const adminLoginStatus = document.getElementById("admin-login-status");
 const authSlider = document.getElementById("auth-slider");
 const authModeButtons = document.querySelectorAll("[data-auth-mode]");
 const authPanels = document.querySelectorAll("[data-auth-panel]");
@@ -65,15 +67,33 @@ async function loginUser(username, password) {
     return { ok: false, message: readResponseError(response, data, "Ошибка входа") };
   }
 
-  localStorage.setItem(USER_TOKEN_KEY, data.access_token);
-  return { ok: true };
+  return { ok: true, token: data.access_token };
+}
+
+async function loginAdmin(username, password) {
+  const body = new URLSearchParams();
+  body.set("username", username);
+  body.set("password", password);
+
+  const response = await fetch(`${API_BASE}/admin/token`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body,
+  });
+  const data = await response.json().catch(() => null);
+  if (!response.ok || !data?.access_token) {
+    return { ok: false, message: readResponseError(response, data, "Ошибка входа администратора") };
+  }
+
+  return { ok: true, token: data.access_token };
 }
 
 function setAuthMode(mode, options = {}) {
-  const normalizedMode = mode === "login" ? "login" : "register";
+  const normalizedMode = ["login", "admin"].includes(mode) ? mode : "register";
   const shouldFocus = Boolean(options.focus);
 
   authSlider?.classList.toggle("is-login", normalizedMode === "login");
+  authSlider?.classList.toggle("is-admin", normalizedMode === "admin");
 
   authModeButtons.forEach((button) => {
     const isActive = button.dataset.authMode === normalizedMode;
@@ -89,6 +109,10 @@ function setAuthMode(mode, options = {}) {
   if (!shouldFocus) return;
   if (normalizedMode === "login") {
     document.getElementById("login-name")?.focus();
+    return;
+  }
+  if (normalizedMode === "admin") {
+    document.getElementById("admin-login-name")?.focus();
     return;
   }
   document.getElementById("register-name")?.focus();
@@ -155,8 +179,12 @@ loginForm.addEventListener("submit", async (event) => {
       return;
     }
 
+    authApi?.storeUserToken(result.token);
     loginForm.reset();
-    setStatus(loginStatus, "Вход выполнен.", "success");
+    setStatus(loginStatus, "Вход выполнен. Открываю каталог.", "success");
+    window.setTimeout(() => {
+      window.location.assign("/cars.html");
+    }, 150);
   } catch {
     setStatus(loginStatus, "Нет подключения к серверу. Проверьте, что backend запущен.", "error");
   } finally {
@@ -164,5 +192,39 @@ loginForm.addEventListener("submit", async (event) => {
   }
 });
 
+adminLoginForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const button = adminLoginForm.querySelector("button[type='submit']");
+  const username = adminLoginForm.username.value.trim();
+  const password = adminLoginForm.password.value;
+
+  if (!username || !password) {
+    setStatus(adminLoginStatus, "Введите логин и пароль администратора.", "error");
+    return;
+  }
+
+  button.disabled = true;
+  setStatus(adminLoginStatus, "Выполняю вход администратора...");
+
+  try {
+    const result = await loginAdmin(username, password);
+    if (!result.ok) {
+      setStatus(adminLoginStatus, result.message, "error");
+      return;
+    }
+
+    authApi?.storeAdminToken(result.token);
+    adminLoginForm.reset();
+    setStatus(adminLoginStatus, "Вход администратора выполнен. Открываю панель.", "success");
+    window.setTimeout(() => {
+      window.location.assign("/admin.html");
+    }, 150);
+  } catch {
+    setStatus(adminLoginStatus, "Нет подключения к серверу. Проверьте, что backend запущен.", "error");
+  } finally {
+    button.disabled = false;
+  }
+});
+
 const requestedMode = new URLSearchParams(window.location.search).get("mode");
-setAuthMode(requestedMode, { focus: requestedMode === "login" });
+setAuthMode(requestedMode, { focus: ["login", "admin"].includes(requestedMode) });

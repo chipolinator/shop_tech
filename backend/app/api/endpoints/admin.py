@@ -35,6 +35,12 @@ async def token(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
+
+@router.get("/me", status_code=200)
+async def get_me(admin: Annotated[str, Depends(get_admin)]):
+    return {"username": admin}
+
+
 UPLOAD_DIR = "/app/uploads/cars"
 
 
