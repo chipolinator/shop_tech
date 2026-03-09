@@ -127,6 +127,25 @@ body::before {
   font-weight: 700;
 }
 
+.session-badge-logout {
+  margin: 0;
+  padding: 0.18rem 0.52rem;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  box-shadow: none;
+  color: #fff;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.session-badge-logout:hover {
+  transform: none;
+  box-shadow: none;
+  background: rgba(255, 255, 255, 0.24);
+  filter: none;
+}
+
 .nav-link {
   display: inline-flex;
   align-items: center;
