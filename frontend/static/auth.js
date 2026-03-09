@@ -81,10 +81,10 @@
     const adminName = decodeTokenSubject(getAdminToken());
 
     if (userName) {
-      entries.push({ role: "Пользователь", name: userName });
+      entries.push({ key: "user", role: "Пользователь", name: userName });
     }
     if (adminName) {
-      entries.push({ role: "Админ", name: adminName });
+      entries.push({ key: "admin", role: "Админ", name: adminName });
     }
 
     return entries;
@@ -116,7 +116,7 @@
     if (!entries.length) return;
 
     entries.forEach((entry) => {
-      const badge = document.createElement("p");
+      const badge = document.createElement("div");
       badge.className = "session-badge";
 
       const role = document.createElement("span");
@@ -127,7 +127,20 @@
       name.className = "session-badge-name";
       name.textContent = entry.name;
 
-      badge.append(role, name);
+      const logoutButton = document.createElement("button");
+      logoutButton.type = "button";
+      logoutButton.className = "session-badge-logout";
+      logoutButton.textContent = "Выйти";
+      logoutButton.setAttribute("aria-label", `Выйти из сессии ${entry.role.toLowerCase()} ${entry.name}`);
+      logoutButton.addEventListener("click", () => {
+        if (entry.key === "admin") {
+          logoutAdmin();
+          return;
+        }
+        logoutUser();
+      });
+
+      badge.append(role, name, logoutButton);
       summary.append(badge);
     });
   }
