@@ -20,10 +20,37 @@
   </header>
 
   <main class="page-main">
-    <section class="container">
-      <div class="split auth-split">
-        <article class="card register-card">
-          <h2>Регистрация</h2>
+    <section class="container auth-shell">
+      <article class="card auth-card">
+        <h2>Аккаунт</h2>
+
+        <div id="auth-slider" class="auth-slider" role="tablist" aria-label="Выбор формы">
+          <span class="auth-slider-thumb" aria-hidden="true"></span>
+          <button
+            id="register-tab"
+            type="button"
+            class="auth-slider-option active"
+            data-auth-mode="register"
+            role="tab"
+            aria-selected="true"
+            aria-controls="register-panel"
+          >
+            Регистрация
+          </button>
+          <button
+            id="login-tab"
+            type="button"
+            class="auth-slider-option"
+            data-auth-mode="login"
+            role="tab"
+            aria-selected="false"
+            aria-controls="login-panel"
+          >
+            Вход
+          </button>
+        </div>
+
+        <section id="register-panel" class="auth-panel" data-auth-panel="register" role="tabpanel" aria-labelledby="register-tab">
           <form id="register-form" class="register-form" novalidate>
             <label for="register-name">Имя</label>
             <input id="register-name" name="name" type="text" placeholder="Введите имя" required autocomplete="username">
@@ -45,10 +72,16 @@
             <button id="register-submit" type="submit">Зарегистрироваться</button>
             <p id="register-status" class="status-line" role="status" aria-live="polite"></p>
           </form>
-        </article>
+        </section>
 
-        <article class="card login-card">
-          <h2>Вход</h2>
+        <section
+          id="login-panel"
+          class="auth-panel"
+          data-auth-panel="login"
+          role="tabpanel"
+          aria-labelledby="login-tab"
+          hidden
+        >
           <form id="login-form" class="register-form" novalidate>
             <label for="login-name">Имя</label>
             <input id="login-name" name="username" type="text" placeholder="Введите имя" required autocomplete="username">
@@ -59,8 +92,8 @@
             <button id="login-submit" type="submit">Войти</button>
             <p id="login-status" class="status-line" role="status" aria-live="polite"></p>
           </form>
-        </article>
-      </div>
+        </section>
+      </article>
     </section>
   </main>
 

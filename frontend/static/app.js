@@ -6,6 +6,9 @@ const registerStatus = document.getElementById("register-status");
 
 const loginForm = document.getElementById("login-form");
 const loginStatus = document.getElementById("login-status");
+const authSlider = document.getElementById("auth-slider");
+const authModeButtons = document.querySelectorAll("[data-auth-mode]");
+const authPanels = document.querySelectorAll("[data-auth-panel]");
 
 function setStatus(node, text, type = "") {
   node.textContent = text;
@@ -65,6 +68,37 @@ async function loginUser(username, password) {
   localStorage.setItem(USER_TOKEN_KEY, data.access_token);
   return { ok: true };
 }
+
+function setAuthMode(mode, options = {}) {
+  const normalizedMode = mode === "login" ? "login" : "register";
+  const shouldFocus = Boolean(options.focus);
+
+  authSlider?.classList.toggle("is-login", normalizedMode === "login");
+
+  authModeButtons.forEach((button) => {
+    const isActive = button.dataset.authMode === normalizedMode;
+    button.classList.toggle("active", isActive);
+    button.setAttribute("aria-selected", String(isActive));
+    button.tabIndex = isActive ? 0 : -1;
+  });
+
+  authPanels.forEach((panel) => {
+    panel.hidden = panel.dataset.authPanel !== normalizedMode;
+  });
+
+  if (!shouldFocus) return;
+  if (normalizedMode === "login") {
+    document.getElementById("login-name")?.focus();
+    return;
+  }
+  document.getElementById("register-name")?.focus();
+}
+
+authModeButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    setAuthMode(button.dataset.authMode, { focus: true });
+  });
+});
 
 registerForm.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -131,6 +165,4 @@ loginForm.addEventListener("submit", async (event) => {
 });
 
 const requestedMode = new URLSearchParams(window.location.search).get("mode");
-if (requestedMode === "login") {
-  document.getElementById("login-name")?.focus();
-}
+setAuthMode(requestedMode, { focus: requestedMode === "login" });

@@ -331,6 +331,23 @@ button:disabled {
   color: var(--error);
 }
 
+.auth-shell {
+  display: flex;
+  justify-content: center;
+}
+
+.auth-card {
+  width: min(520px, 100%);
+}
+
+.auth-panel {
+  margin-top: 0.74rem;
+}
+
+.auth-panel[hidden] {
+  display: none;
+}
+
 .split {
   display: grid;
   grid-template-columns: repeat(2, minmax(280px, 1fr));
