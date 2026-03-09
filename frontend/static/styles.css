@@ -69,11 +69,12 @@ body::before {
 }
 
 .topbar .container {
-  display: flex;
-  justify-content: space-between;
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 0.9rem;
-  padding: 0.68rem 0;
+  padding: 0.68rem 1rem;
 }
 
 .brand {
@@ -84,6 +85,7 @@ body::before {
   text-transform: uppercase;
   color: #fff;
   white-space: nowrap;
+  justify-self: start;
 }
 
 .nav-links {
@@ -94,6 +96,7 @@ body::before {
   border: 1px solid rgba(255, 255, 255, 0.35);
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.08);
+  justify-self: center;
 }
 
 .session-summary {
@@ -101,7 +104,8 @@ body::before {
   gap: 0.4rem;
   flex-wrap: wrap;
   justify-content: flex-end;
-  margin-left: auto;
+  justify-self: end;
+  margin-left: 0;
 }
 
 .session-badge {
@@ -703,8 +707,8 @@ button:disabled {
   }
 
   .topbar .container {
-    align-items: flex-start;
-    flex-direction: column;
+    grid-template-columns: 1fr;
+    justify-items: start;
   }
 
   .brand {
@@ -714,11 +718,14 @@ button:disabled {
   .nav-links {
     width: 100%;
     border-radius: 14px;
+    justify-content: center;
+    justify-self: stretch;
   }
 
   .session-summary {
     width: 100%;
     justify-content: flex-start;
+    justify-self: stretch;
     margin-left: 0;
   }
 }
