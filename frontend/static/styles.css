@@ -69,11 +69,12 @@ body::before {
 }
 
 .topbar .container {
-  display: flex;
-  justify-content: space-between;
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 0.9rem;
-  padding: 0.68rem 0;
+  padding: 0.68rem 1rem;
 }
 
 .brand {
@@ -84,6 +85,7 @@ body::before {
   text-transform: uppercase;
   color: #fff;
   white-space: nowrap;
+  justify-self: start;
 }
 
 .nav-links {
@@ -94,6 +96,58 @@ body::before {
   border: 1px solid rgba(255, 255, 255, 0.35);
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.08);
+  justify-self: center;
+}
+
+.session-summary {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  justify-self: end;
+  margin-left: 0;
+}
+
+.session-badge {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42rem;
+  padding: 0.28rem 0.7rem;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+.session-badge-role {
+  opacity: 0.78;
+}
+
+.session-badge-name {
+  font-size: 0.83rem;
+  font-weight: 700;
+}
+
+.session-badge-logout {
+  margin: 0;
+  padding: 0.18rem 0.52rem;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  box-shadow: none;
+  color: #fff;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.session-badge-logout:hover {
+  transform: none;
+  box-shadow: none;
+  background: rgba(255, 255, 255, 0.24);
+  filter: none;
 }
 
 .nav-link {
@@ -198,7 +252,7 @@ body::before {
 .auth-slider {
   position: relative;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   border: 1px solid #e2c8ce;
   background: #f6e9ec;
   border-radius: 999px;
@@ -210,7 +264,7 @@ body::before {
   position: absolute;
   top: 2px;
   left: 2px;
-  width: calc(50% - 2px);
+  width: calc((100% - 4px) / 3);
   height: calc(100% - 4px);
   background: #fff;
   border-radius: 999px;
@@ -220,6 +274,10 @@ body::before {
 
 .auth-slider.is-login .auth-slider-thumb {
   transform: translateX(100%);
+}
+
+.auth-slider.is-admin .auth-slider-thumb {
+  transform: translateX(200%);
 }
 
 .auth-slider .auth-slider-option {
@@ -329,6 +387,23 @@ button:disabled {
 #form-status.error,
 .status-line.error {
   color: var(--error);
+}
+
+.auth-shell {
+  display: flex;
+  justify-content: center;
+}
+
+.auth-card {
+  width: min(520px, 100%);
+}
+
+.auth-panel {
+  margin-top: 0.74rem;
+}
+
+.auth-panel[hidden] {
+  display: none;
 }
 
 .split {
@@ -632,8 +707,8 @@ button:disabled {
   }
 
   .topbar .container {
-    align-items: flex-start;
-    flex-direction: column;
+    grid-template-columns: 1fr;
+    justify-items: start;
   }
 
   .brand {
@@ -643,6 +718,15 @@ button:disabled {
   .nav-links {
     width: 100%;
     border-radius: 14px;
+    justify-content: center;
+    justify-self: stretch;
+  }
+
+  .session-summary {
+    width: 100%;
+    justify-content: flex-start;
+    justify-self: stretch;
+    margin-left: 0;
   }
 }
 
