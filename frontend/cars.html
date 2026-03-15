@@ -29,6 +29,18 @@
         <p id="cars-status" class="status-line" role="status" aria-live="polite"></p>
       </div>
 
+      <section class="card brand-filter" aria-labelledby="brand-filter-title">
+        <div class="brand-filter-header">
+          <div>
+            <h2 id="brand-filter-title">Фильтр по марке</h2>
+            <p class="muted brand-filter-note">
+              Нажмите на кнопку марки, чтобы оставить в каталоге только выбранные машины.
+            </p>
+          </div>
+        </div>
+        <div id="brand-filters" class="filter-chips" role="group" aria-label="Список марок"></div>
+      </section>
+
       <section id="cars-list" class="cars-grid" aria-live="polite"></section>
     </section>
   </main>
