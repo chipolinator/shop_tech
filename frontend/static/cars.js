@@ -89,6 +89,8 @@ function renderCars(cars, emptyText) {
     return;
   }
 
+  const cartIds = getGuestCartIds();
+
   carsList.innerHTML = cars
     .map((car) => {
       const title = `${escapeHtml(car.brand)} ${escapeHtml(car.model)}`;
@@ -98,10 +100,13 @@ function renderCars(cars, emptyText) {
         : '<div class="car-image placeholder">Без изображения</div>';
       const id = Number(car.id);
       const hasValidId = Number.isInteger(id) && id > 0;
+      const inCart = hasValidId && cartIds.includes(id);
       const actionButtons = hasValidId
         ? `
           <div class="controls">
-            <button type="button" data-action="add" data-car-id="${id}">В корзину</button>
+            <button type="button" data-action="add" data-car-id="${id}" ${inCart ? 'disabled class="in-cart"' : ''}>
+              ${inCart ? "В корзине" : "В корзину"}
+            </button>
           </div>
         `
         : "";
@@ -149,13 +154,19 @@ async function loadCars() {
 }
 
 async function addCarToCart(carId) {
-  const added = addGuestCarId(carId);
-  if (added) {
-    setStatus("Машина добавлена в корзину.", "success");
-  } else {
-    setStatus("Эта машина уже есть в корзине.");
+  try {
+    const added = addGuestCarId(carId);
+    if (added) {
+      setStatus("Машина добавлена в корзину.", "success");
+    } else {
+      setStatus("Эта машина уже есть в корзине.");
+    }
+    return added;
+  } catch (error) {
+    console.error("Failed to add car to cart", error);
+    setStatus("Не удалось добавить машину в корзину.", "error");
+    return false;
   }
-  return true;
 }
 
 carsList.addEventListener("click", async (event) => {
@@ -169,9 +180,22 @@ carsList.addEventListener("click", async (event) => {
   }
 
   button.disabled = true;
-  const ok = await addCarToCart(carId);
-  button.disabled = false;
-  if (!ok) return;
+  let added = false;
+  try {
+    added = await addCarToCart(carId);
+  } finally {
+    if (added) {
+      button.disabled = true;
+      button.classList.add("in-cart");
+      button.textContent = "В корзине";
+    } else {
+      button.disabled = false;
+      button.classList.remove("in-cart");
+      button.textContent = "В корзину";
+    }
+  }
+
+  if (!added) return;
 });
 
 refreshButton.addEventListener("click", loadCars);

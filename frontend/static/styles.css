@@ -367,9 +367,14 @@ button:hover {
 
 button:disabled {
   opacity: 0.72;
-  cursor: wait;
+  cursor: not-allowed;
   transform: none;
   box-shadow: 0 4px 8px rgba(133, 40, 54, 0.18);
+}
+
+.car-card .controls button.in-cart {
+  cursor: default;
+  opacity: 0.85;
 }
 
 #form-status,
@@ -482,6 +487,11 @@ button:disabled {
 
 .car-card .controls button {
   flex: 1 1 auto;
+}
+
+.car-card .controls button.in-cart {
+  background: linear-gradient(135deg, #6ca26c 0%, #479a4e 100%);
+  box-shadow: 0 4px 8px rgba(66, 102, 66, 0.25);
 }
 
 .car-image {
