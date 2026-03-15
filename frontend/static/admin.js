@@ -1,15 +1,14 @@
 const API_BASE = `/api`;
-const ADMIN_TOKEN_KEY = "shoptech_admin_token";
+const authApi = window.ShopTechAuth;
 const ENDPOINTS = {
-  token: `${API_BASE}/admin/token`,
   createCar: `${API_BASE}/admin/create_car`,
   allUsers: `${API_BASE}/admin/all_users`,
   deleteUser: `${API_BASE}/admin/delete_user`,
   deleteCar: `${API_BASE}/admin/delete_car`,
 };
 
-const tokenForm = document.getElementById("admin-token-form");
-const tokenStatus = document.getElementById("admin-token-status");
+const sessionStatus = document.getElementById("admin-session-status");
+const logoutButton = document.getElementById("admin-logout");
 
 const createCarForm = document.getElementById("create-car-form");
 const createCarStatus = document.getElementById("create-car-status");
@@ -38,7 +37,7 @@ function setStatus(node, text, type = "") {
 }
 
 function getAdminToken() {
-  return localStorage.getItem(ADMIN_TOKEN_KEY) || "";
+  return authApi?.getAdminToken?.() || "";
 }
 
 function getAuthHeaders() {
@@ -76,10 +75,12 @@ function isAuthError(response, data) {
 }
 
 function handleAuthError(statusNode) {
-  localStorage.removeItem(ADMIN_TOKEN_KEY);
-  window.ShopTechNav?.syncAdminLink();
+  authApi?.clearAdminToken?.();
   setStatus(statusNode, "Сессия администратора истекла. Войдите снова.", "error");
-  setStatus(tokenStatus, "Требуется повторный вход администратора.", "error");
+  setStatus(sessionStatus, "Сессия истекла. Возвращаю на страницу входа.", "error");
+  window.setTimeout(() => {
+    authApi?.redirectToLogin?.("admin");
+  }, 250);
 }
 
 function askPositiveId(title) {
@@ -135,48 +136,6 @@ async function runAdminRequest(url, options = {}, statusNode = actionsStatus) {
     return { ok: false, data: null };
   }
 }
-
-tokenForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const button = tokenForm.querySelector("button[type='submit']");
-  const username = tokenForm.username.value.trim();
-  const password = tokenForm.password.value;
-
-  if (!username || !password) {
-    setStatus(tokenStatus, "Введите admin username и пароль.", "error");
-    return;
-  }
-
-  const body = new URLSearchParams();
-  body.set("username", username);
-  body.set("password", password);
-
-  button.disabled = true;
-  setStatus(tokenStatus, "Выполняю вход...");
-
-  try {
-    const response = await fetch(ENDPOINTS.token, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body,
-    });
-    const data = await readResponseBody(response);
-
-    if (!response.ok || !data?.access_token) {
-      setStatus(tokenStatus, `Ошибка входа${errorDetail(response, data)}`, "error");
-      return;
-    }
-
-    localStorage.setItem(ADMIN_TOKEN_KEY, data.access_token);
-    window.ShopTechNav?.syncAdminLink();
-    setStatus(tokenStatus, "Вход администратора выполнен.", "success");
-    setStatus(actionsStatus, "Можно использовать админ-действия.", "success");
-  } catch {
-    setStatus(tokenStatus, "Нет соединения с backend.", "error");
-  } finally {
-    button.disabled = false;
-  }
-});
 
 createCarForm.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -276,3 +235,17 @@ deleteCarButton.addEventListener("click", async () => {
 
   deleteCarButton.disabled = false;
 });
+
+logoutButton.addEventListener("click", () => {
+  authApi?.logoutAdmin?.();
+});
+
+async function initAdminPage() {
+  const allowed = await (authApi?.ensureAdminSession?.() ?? Promise.resolve(true));
+  if (!allowed) return;
+
+  setStatus(sessionStatus, "Сессия администратора активна.", "success");
+  setStatus(actionsStatus, "Можно использовать админ-действия.", "success");
+}
+
+initAdminPage();
