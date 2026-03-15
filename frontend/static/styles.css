@@ -174,6 +174,10 @@ body::before {
   background: #fff;
 }
 
+.is-hidden {
+  display: none !important;
+}
+
 .page-main {
   min-height: 0;
   flex: 1 0 auto;
@@ -439,6 +443,61 @@ button:disabled {
 .controls .status-line {
   flex: 1 1 220px;
   margin: 0;
+}
+
+.brand-filter {
+  margin: 0 0 0.82rem;
+  padding: 0.9rem;
+}
+
+.brand-filter-header {
+  margin-bottom: 0.72rem;
+}
+
+.brand-filter h2 {
+  margin: 0;
+  font-size: 1.04rem;
+}
+
+.brand-filter-note {
+  margin: 0.18rem 0 0;
+  font-size: 0.9rem;
+}
+
+.filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.48rem;
+}
+
+.filter-chip {
+  margin-top: 0;
+  border: 1px solid #e1c0c8;
+  border-radius: 999px;
+  padding: 0.52rem 0.82rem;
+  background: linear-gradient(180deg, #fff9fa 0%, #f9eaee 100%);
+  color: #7a4954;
+  box-shadow: none;
+}
+
+.filter-chip:hover {
+  box-shadow: none;
+}
+
+.filter-chip.is-active {
+  border-color: transparent;
+  background: linear-gradient(135deg, var(--primary) 0%, #c94b5d 100%);
+  color: #fff;
+  box-shadow: 0 8px 14px rgba(157, 46, 63, 0.2);
+}
+
+.filter-chip.is-active:hover {
+  box-shadow: 0 10px 16px rgba(138, 39, 53, 0.22);
+}
+
+.brand-filter-empty {
+  margin: 0;
+  font-size: 0.9rem;
 }
 
 .output-box {
