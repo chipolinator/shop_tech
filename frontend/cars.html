@@ -32,18 +32,24 @@
     <section class="container">
       <h1 class="page-title">Каталог</h1>
 
-      <div class="controls">
-        <button id="refresh-cars" type="button">Обновить список</button>
-        <button id="go-to-cart" type="button">Перейти в корзину</button>
-        <p id="cars-status" class="status-line" role="status" aria-live="polite"></p>
-      </div>
+      <section class="card brand-filter" aria-labelledby="brand-filter-title">
+        <div class="brand-filter-header">
+          <div>
+            <h2 id="brand-filter-title">Фильтр по марке</h2>
+            <p class="muted brand-filter-note">
+              Нажмите на кнопку марки, чтобы оставить в каталоге только выбранные машины.
+            </p>
+          </div>
+        </div>
+        <div id="brand-filters" class="filter-chips" role="group" aria-label="Список марок"></div>
+      </section>
 
       <section id="cars-list" class="cars-grid" aria-live="polite"></section>
     </section>
   </main>
 
   <footer class="footer">
-    <p>ShopTech Frontend</p>
+    <p>team monopolics</p>
   </footer>
 
   <script src="/static/auth.js"></script>
