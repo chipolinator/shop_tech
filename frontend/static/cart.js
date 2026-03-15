@@ -1,4 +1,5 @@
 const API_BASE = `/api`;
+const authApi = window.ShopTechAuth;
 const GUEST_CART_KEY = "shoptech_guest_cart";
 const ENDPOINTS = {
   listCars: `${API_BASE}/cars/all`,
@@ -181,4 +182,10 @@ buyAllButton.addEventListener("click", async () => {
   }
 });
 
-loadCart();
+async function initCartPage() {
+  const allowed = await (authApi?.ensureUserSession?.() ?? Promise.resolve(true));
+  if (!allowed) return;
+  loadCart();
+}
+
+initCartPage();
