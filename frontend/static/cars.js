@@ -3,10 +3,13 @@ const GUEST_CART_KEY = "shoptech_guest_cart";
 const ENDPOINTS = {
   listCars: `${API_BASE}/cars/all`,
 };
+const DRIVE_LABELS = {
+  front: "передний",
+  rear: "задний",
+  all: "полный",
+};
+const priceFormatter = new Intl.NumberFormat("ru-RU");
 
-const refreshButton = document.getElementById("refresh-cars");
-const goToCartButton = document.getElementById("go-to-cart");
-const status = document.getElementById("cars-status");
 const brandFilters = document.getElementById("brand-filters");
 const carsList = document.getElementById("cars-list");
 
@@ -14,6 +17,8 @@ let allCars = [];
 let activeBrand = "";
 
 function setStatus(text, type = "") {
+  const status = document.getElementById("cars-status");
+  if (!status) return;
   status.textContent = text;
   status.className = type ? `status-line ${type}` : "status-line";
 }
@@ -30,6 +35,29 @@ function escapeHtml(value) {
 function getCarBrand(car) {
   const brand = String(car?.brand ?? "").trim();
   return brand || "Без марки";
+}
+
+function getDriveLabel(drive) {
+  const normalizedDrive = String(drive ?? "").trim().toLowerCase();
+  return DRIVE_LABELS[normalizedDrive] ?? String(drive ?? "");
+}
+
+function formatPrice(price) {
+  if (typeof price === "number" && Number.isFinite(price)) {
+    return priceFormatter.format(price);
+  }
+
+  const normalizedPrice = String(price ?? "").trim();
+  if (!normalizedPrice) {
+    return "";
+  }
+
+  const numericPrice = Number(normalizedPrice.replace(/[^\d.-]/g, ""));
+  if (Number.isFinite(numericPrice)) {
+    return priceFormatter.format(numericPrice);
+  }
+
+  return normalizedPrice;
 }
 
 function getBrandGroups(cars) {
@@ -151,6 +179,8 @@ function renderCars(cars, emptyText) {
     return;
   }
 
+  const guestCartIds = new Set(getGuestCartIds());
+
   carsList.innerHTML = cars
     .map((car) => {
       const title = `${escapeHtml(getCarBrand(car))} ${escapeHtml(car.model)}`;
@@ -160,10 +190,13 @@ function renderCars(cars, emptyText) {
         : '<div class="car-image placeholder">Без изображения</div>';
       const id = Number(car.id);
       const hasValidId = Number.isInteger(id) && id > 0;
+      const isInCart = hasValidId && guestCartIds.has(id);
       const actionButtons = hasValidId
         ? `
           <div class="controls">
-            <button type="button" data-action="add" data-car-id="${id}">В корзину</button>
+            <button type="button" data-action="add" data-car-id="${id}" ${isInCart ? "disabled" : ""}>
+              ${isInCart ? "В корзине" : "В корзину"}
+            </button>
           </div>
         `
         : "";
@@ -174,9 +207,8 @@ function renderCars(cars, emptyText) {
           <h2>${title}</h2>
           <p><strong>Мощность:</strong> ${escapeHtml(car.power)} л.с.</p>
           <p><strong>Объём:</strong> ${escapeHtml(car.displacement)} л</p>
-          <p><strong>Привод:</strong> ${escapeHtml(car.drive)}</p>
-          <p><strong>Цена:</strong> ${escapeHtml(car.price)}</p>
-          <p class="muted"><strong>ID:</strong> ${escapeHtml(car.id ?? "n/a")}</p>
+          <p><strong>Привод:</strong> ${escapeHtml(getDriveLabel(car.drive))}</p>
+          <p><strong>Цена:</strong> ${escapeHtml(formatPrice(car.price))}</p>
           ${actionButtons}
         </article>
       `;
@@ -192,23 +224,9 @@ function renderCatalog() {
 
   renderBrandFilters(allCars);
   renderCars(filteredCars, emptyText);
-
-  if (!allCars.length) {
-    setStatus("Пока нет ни одной машины.");
-    return;
-  }
-
-  if (!activeBrand) {
-    setStatus(`Загружено машин: ${allCars.length}.`, "success");
-    return;
-  }
-
-  setStatus(`Показаны машины марки "${activeBrand}": ${filteredCars.length} из ${allCars.length}.`, "success");
 }
 
 async function loadCars() {
-  refreshButton.disabled = true;
-  goToCartButton.disabled = true;
   setStatus("Загрузка списка машин...");
 
   try {
@@ -219,8 +237,7 @@ async function loadCars() {
       allCars = [];
       activeBrand = "";
       renderBrandFilters([]);
-      setStatus(`Ошибка загрузки машин${errorDetail(response, data)}`, "error");
-      carsList.innerHTML = "";
+      renderCars([], `Ошибка загрузки машин${errorDetail(response, data)}`);
       return;
     }
 
@@ -234,22 +251,12 @@ async function loadCars() {
     allCars = [];
     activeBrand = "";
     renderBrandFilters([]);
-    setStatus("Нет соединения с backend.", "error");
-    carsList.innerHTML = "";
-  } finally {
-    refreshButton.disabled = false;
-    goToCartButton.disabled = false;
+    renderCars([], "Нет соединения с backend.");
   }
 }
 
 async function addCarToCart(carId) {
-  const added = addGuestCarId(carId);
-  if (added) {
-    setStatus("Машина добавлена в корзину.", "success");
-  } else {
-    setStatus("Эта машина уже есть в корзине.");
-  }
-  return true;
+  return addGuestCarId(carId);
 }
 
 carsList.addEventListener("click", async (event) => {
@@ -263,9 +270,13 @@ carsList.addEventListener("click", async (event) => {
   }
 
   button.disabled = true;
-  const ok = await addCarToCart(carId);
-  button.disabled = false;
-  if (!ok) return;
+  const added = await addCarToCart(carId);
+  if (added) {
+    button.textContent = "В корзине";
+    return;
+  }
+
+  button.textContent = "В корзине";
 });
 
 if (brandFilters) {
@@ -277,10 +288,5 @@ if (brandFilters) {
     renderCatalog();
   });
 }
-
-refreshButton.addEventListener("click", loadCars);
-goToCartButton.addEventListener("click", () => {
-  window.location.href = "/cart.html";
-});
 
 loadCars();
