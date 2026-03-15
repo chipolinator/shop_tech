@@ -120,6 +120,10 @@ body::before {
   background: #fff;
 }
 
+.is-hidden {
+  display: none !important;
+}
+
 .page-main {
   min-height: 0;
   flex: 1 0 auto;

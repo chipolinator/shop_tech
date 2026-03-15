@@ -77,6 +77,7 @@ function isAuthError(response, data) {
 
 function handleAuthError(statusNode) {
   localStorage.removeItem(ADMIN_TOKEN_KEY);
+  window.ShopTechNav?.syncAdminLink();
   setStatus(statusNode, "Сессия администратора истекла. Войдите снова.", "error");
   setStatus(tokenStatus, "Требуется повторный вход администратора.", "error");
 }
@@ -167,6 +168,7 @@ tokenForm.addEventListener("submit", async (event) => {
     }
 
     localStorage.setItem(ADMIN_TOKEN_KEY, data.access_token);
+    window.ShopTechNav?.syncAdminLink();
     setStatus(tokenStatus, "Вход администратора выполнен.", "success");
     setStatus(actionsStatus, "Можно использовать админ-действия.", "success");
   } catch {
