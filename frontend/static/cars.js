@@ -7,7 +7,11 @@ const ENDPOINTS = {
 const refreshButton = document.getElementById("refresh-cars");
 const goToCartButton = document.getElementById("go-to-cart");
 const status = document.getElementById("cars-status");
+const brandFilters = document.getElementById("brand-filters");
 const carsList = document.getElementById("cars-list");
+
+let allCars = [];
+let activeBrand = "";
 
 function setStatus(text, type = "") {
   status.textContent = text;
@@ -21,6 +25,65 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
+}
+
+function getCarBrand(car) {
+  const brand = String(car?.brand ?? "").trim();
+  return brand || "Без марки";
+}
+
+function getBrandGroups(cars) {
+  const counts = new Map();
+
+  for (const car of cars) {
+    const brand = getCarBrand(car);
+    counts.set(brand, (counts.get(brand) ?? 0) + 1);
+  }
+
+  return [...counts.entries()]
+    .map(([brand, count]) => ({ brand, count }))
+    .sort((left, right) => left.brand.localeCompare(right.brand, "ru", { sensitivity: "base" }));
+}
+
+function getFilteredCars() {
+  if (!activeBrand) {
+    return allCars;
+  }
+  return allCars.filter((car) => getCarBrand(car) === activeBrand);
+}
+
+function createBrandFilterButton(label, brand) {
+  const button = document.createElement("button");
+  const isActive = brand === activeBrand;
+
+  button.type = "button";
+  button.className = isActive ? "filter-chip is-active" : "filter-chip";
+  button.dataset.brandFilter = "true";
+  button.dataset.brand = brand;
+  button.textContent = label;
+  button.setAttribute("aria-pressed", String(isActive));
+
+  return button;
+}
+
+function renderBrandFilters(cars) {
+  if (!brandFilters) return;
+
+  brandFilters.innerHTML = "";
+  if (!cars.length) {
+    brandFilters.innerHTML = '<p class="muted brand-filter-empty">Марки появятся после загрузки каталога.</p>';
+    return;
+  }
+
+  const fragment = document.createDocumentFragment();
+  const brandGroups = getBrandGroups(cars);
+
+  fragment.append(createBrandFilterButton(`Все марки (${cars.length})`, ""));
+  for (const { brand, count } of brandGroups) {
+    fragment.append(createBrandFilterButton(`${brand} (${count})`, brand));
+  }
+
+  brandFilters.append(fragment);
 }
 
 function getGuestCartIds() {
@@ -90,7 +153,7 @@ function renderCars(cars, emptyText) {
 
   carsList.innerHTML = cars
     .map((car) => {
-      const title = `${escapeHtml(car.brand)} ${escapeHtml(car.model)}`;
+      const title = `${escapeHtml(getCarBrand(car))} ${escapeHtml(car.model)}`;
       const imageUrl = buildImageUrl(car.image_path);
       const imageTag = imageUrl
         ? `<img class="car-image" src="${escapeHtml(imageUrl)}" alt="${title}" loading="lazy">`
@@ -121,6 +184,28 @@ function renderCars(cars, emptyText) {
     .join("");
 }
 
+function renderCatalog() {
+  const filteredCars = getFilteredCars();
+  const emptyText = activeBrand
+    ? `Машины марки "${activeBrand}" не найдены.`
+    : "Пока нет ни одной машины.";
+
+  renderBrandFilters(allCars);
+  renderCars(filteredCars, emptyText);
+
+  if (!allCars.length) {
+    setStatus("Пока нет ни одной машины.");
+    return;
+  }
+
+  if (!activeBrand) {
+    setStatus(`Загружено машин: ${allCars.length}.`, "success");
+    return;
+  }
+
+  setStatus(`Показаны машины марки "${activeBrand}": ${filteredCars.length} из ${allCars.length}.`, "success");
+}
+
 async function loadCars() {
   refreshButton.disabled = true;
   goToCartButton.disabled = true;
@@ -131,14 +216,24 @@ async function loadCars() {
     const data = await readResponseBody(response);
 
     if (!response.ok || !Array.isArray(data)) {
+      allCars = [];
+      activeBrand = "";
+      renderBrandFilters([]);
       setStatus(`Ошибка загрузки машин${errorDetail(response, data)}`, "error");
       carsList.innerHTML = "";
       return;
     }
 
-    renderCars(data, "Пока нет ни одной машины.");
-    setStatus(`Загружено машин: ${data.length}.`, "success");
+    allCars = data;
+    if (activeBrand && !allCars.some((car) => getCarBrand(car) === activeBrand)) {
+      activeBrand = "";
+    }
+
+    renderCatalog();
   } catch {
+    allCars = [];
+    activeBrand = "";
+    renderBrandFilters([]);
     setStatus("Нет соединения с backend.", "error");
     carsList.innerHTML = "";
   } finally {
@@ -172,6 +267,16 @@ carsList.addEventListener("click", async (event) => {
   button.disabled = false;
   if (!ok) return;
 });
+
+if (brandFilters) {
+  brandFilters.addEventListener("click", (event) => {
+    const button = event.target.closest("button[data-brand-filter]");
+    if (!button) return;
+
+    activeBrand = button.dataset.brand ?? "";
+    renderCatalog();
+  });
+}
 
 refreshButton.addEventListener("click", loadCars);
 goToCartButton.addEventListener("click", () => {
