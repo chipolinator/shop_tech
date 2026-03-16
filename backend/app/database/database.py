@@ -1,7 +1,7 @@
 from sqlmodel import create_engine, Session, SQLModel, select, delete
 from config import settings
 import models
-from schemas.models import User as UserDB, Admin, Car
+from schemas.models import User as UserDB, Admin, Car, CarUpdate
 import utils.security
 
 
@@ -68,6 +68,22 @@ def delete_car_by_id(id: int):
         statement = delete(Car).where(Car.id == id)
         result = session.exec(statement)
         session.commit()
+
+
+def update_car_by_id(id: int, car_data: CarUpdate):
+    with Session(engine) as session:
+        car = session.get(Car, id)
+        if not car:
+            return None
+
+        updated_fields = car_data.model_dump()
+        for field, value in updated_fields.items():
+            setattr(car, field, value)
+
+        session.add(car)
+        session.commit()
+        session.refresh(car)
+        return car
 
 
 def create_admin(name: str, password: str):

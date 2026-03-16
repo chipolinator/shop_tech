@@ -1,4 +1,5 @@
 from sqlmodel import SQLModel, Field
+from pydantic import BaseModel, Field as PydanticField
 
 from enum import Enum
 
@@ -30,3 +31,12 @@ class Car(SQLModel, table=True):
     drive: DriveType
     price: int = Field(gt=0)
     image_path: str
+
+
+class CarUpdate(BaseModel):
+    brand: str = PydanticField(min_length=1)
+    model: str = PydanticField(min_length=1)
+    power: int = PydanticField(gt=0)
+    displacement: float = PydanticField(gt=0)
+    drive: DriveType
+    price: int = PydanticField(gt=0)

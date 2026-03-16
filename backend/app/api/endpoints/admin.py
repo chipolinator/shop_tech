@@ -4,9 +4,9 @@ from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from utils.security import verify_password, create_access_token, decode_token
 from config import settings
 from datetime import timedelta
-from schemas.models import DriveType, Car
+from schemas.models import DriveType, Car, CarUpdate
 from pathlib import Path
-from database.database import add_car_db, delete_car_by_id, delete_user_by_id,get_users
+from database.database import add_car_db, delete_car_by_id, delete_user_by_id, get_users, update_car_by_id
 from PIL import Image
 import io
 
@@ -47,6 +47,18 @@ UPLOAD_DIR = "/app/uploads/cars"
 @router.delete("/delete_car", status_code=200)
 async def delete_car(admin: Annotated[settings.ADMIN_NAME, Depends(get_admin)], id: int):
     delete_car_by_id(id)
+
+
+@router.patch("/update_car", status_code=200)
+async def update_car(
+    admin: Annotated[settings.ADMIN_NAME, Depends(get_admin)],
+    id: int,
+    car_data: CarUpdate,
+):
+    updated_car = update_car_by_id(id, car_data)
+    if not updated_car:
+        raise HTTPException(status_code=404, detail="Car not found")
+    return updated_car
 
 
 @router.delete("/delete_user", status_code=200)

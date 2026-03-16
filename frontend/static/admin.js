@@ -2,7 +2,9 @@ const API_BASE = `/api`;
 const authApi = window.ShopTechAuth;
 const ENDPOINTS = {
   createCar: `${API_BASE}/admin/create_car`,
+  listCars: `${API_BASE}/cars/all`,
   deleteCar: `${API_BASE}/admin/delete_car`,
+  updateCar: `${API_BASE}/admin/update_car`,
 };
 
 const sessionStatus = document.getElementById("admin-session-status");
@@ -16,12 +18,14 @@ const adminActions = document.createElement("div");
 adminActions.className = "stack-form";
 adminActions.innerHTML = `
   <div class="controls">
+    <button type="button" id="admin-edit-car">Редактировать машину</button>
     <button type="button" id="admin-delete-car">Удалить машину</button>
   </div>
   <p id="admin-actions-status" class="status-line" role="status" aria-live="polite"></p>
 `;
 createCarForm.insertAdjacentElement("afterend", adminActions);
 
+const editCarButton = document.getElementById("admin-edit-car");
 const deleteCarButton = document.getElementById("admin-delete-car");
 const actionsStatus = document.getElementById("admin-actions-status");
 
@@ -87,6 +91,93 @@ function askPositiveId(title) {
     return null;
   }
   return id;
+}
+
+function askCarField(title, currentValue) {
+  const nextValue = window.prompt(title, String(currentValue ?? ""));
+  if (nextValue === null) return null;
+  return nextValue.trim();
+}
+
+function normalizeDriveValue(rawValue) {
+  return String(rawValue ?? "").trim().toLowerCase();
+}
+
+function buildCarUpdatePayload(car) {
+  const brand = askCarField("Марка:", car.brand);
+  if (brand === null) {
+    setStatus(actionsStatus, "Редактирование отменено.");
+    return null;
+  }
+
+  const model = askCarField("Модель:", car.model);
+  if (model === null) {
+    setStatus(actionsStatus, "Редактирование отменено.");
+    return null;
+  }
+
+  const powerRaw = askCarField("Мощность (л.с.):", car.power);
+  if (powerRaw === null) {
+    setStatus(actionsStatus, "Редактирование отменено.");
+    return null;
+  }
+
+  const displacementRaw = askCarField("Объём двигателя (л):", car.displacement);
+  if (displacementRaw === null) {
+    setStatus(actionsStatus, "Редактирование отменено.");
+    return null;
+  }
+
+  const driveRaw = askCarField("Привод (front, rear, all):", car.drive);
+  if (driveRaw === null) {
+    setStatus(actionsStatus, "Редактирование отменено.");
+    return null;
+  }
+
+  const priceRaw = askCarField("Цена:", car.price);
+  if (priceRaw === null) {
+    setStatus(actionsStatus, "Редактирование отменено.");
+    return null;
+  }
+
+  const power = Number(powerRaw);
+  const displacement = Number(displacementRaw.replace(",", "."));
+  const drive = normalizeDriveValue(driveRaw);
+  const price = Number(String(priceRaw).replace(/\D/g, ""));
+
+  if (!brand || !model) {
+    setStatus(actionsStatus, "Марка и модель не должны быть пустыми.", "error");
+    return null;
+  }
+
+  if (!Number.isInteger(power) || power <= 0) {
+    setStatus(actionsStatus, "Мощность должна быть целым числом больше 0.", "error");
+    return null;
+  }
+
+  if (!Number.isFinite(displacement) || displacement <= 0) {
+    setStatus(actionsStatus, "Объём двигателя должен быть числом больше 0.", "error");
+    return null;
+  }
+
+  if (!["front", "rear", "all"].includes(drive)) {
+    setStatus(actionsStatus, "Привод должен быть одним из: front, rear, all.", "error");
+    return null;
+  }
+
+  if (!Number.isInteger(price) || price <= 0) {
+    setStatus(actionsStatus, "Цена должна быть целым числом больше 0.", "error");
+    return null;
+  }
+
+  return {
+    brand,
+    model,
+    power,
+    displacement,
+    drive,
+    price,
+  };
 }
 
 function formatNumberWithSpaces(rawValue) {
@@ -181,6 +272,49 @@ createCarForm.addEventListener("submit", async (event) => {
   } finally {
     button.disabled = false;
   }
+});
+
+editCarButton.addEventListener("click", async () => {
+  const id = askPositiveId("Введите ID машины для редактирования:");
+  if (id === null) return;
+
+  editCarButton.disabled = true;
+  setStatus(actionsStatus, "Загружаю данные машины...");
+
+  const carsResult = await runAdminRequest(ENDPOINTS.listCars);
+  if (!carsResult.ok) {
+    editCarButton.disabled = false;
+    return;
+  }
+
+  const car = Array.isArray(carsResult.data)
+    ? carsResult.data.find((item) => Number(item.id) === id)
+    : null;
+
+  if (!car) {
+    setStatus(actionsStatus, `Машина ${id} не найдена.`, "error");
+    editCarButton.disabled = false;
+    return;
+  }
+
+  const payload = buildCarUpdatePayload(car);
+  if (!payload) {
+    editCarButton.disabled = false;
+    return;
+  }
+
+  setStatus(actionsStatus, "Сохраняю изменения...");
+
+  const result = await runAdminRequest(`${ENDPOINTS.updateCar}?id=${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (result.ok) {
+    setStatus(actionsStatus, `Машина ${id} обновлена.`, "success");
+  }
+
+  editCarButton.disabled = false;
 });
 
 deleteCarButton.addEventListener("click", async () => {
