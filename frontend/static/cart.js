@@ -45,6 +45,20 @@ function clearGuestCart() {
   localStorage.removeItem(GUEST_CART_KEY);
 }
 
+function saveGuestCartIds(ids) {
+  localStorage.setItem(GUEST_CART_KEY, JSON.stringify(ids));
+}
+
+function removeGuestCarId(carId) {
+  const ids = getGuestCartIds();
+  const filtered = ids.filter((id) => id !== carId);
+  if (filtered.length === ids.length) {
+    return false;
+  }
+  saveGuestCartIds(filtered);
+  return true;
+}
+
 function buildImageUrl(imagePath) {
   if (!imagePath) return "";
   if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) return imagePath;
@@ -106,7 +120,7 @@ function renderCart(cars) {
         : '<div class="cart-item-thumb placeholder">Нет фото</div>';
 
       return `
-        <li class="cart-item-row">
+        <li class="cart-item-row" data-car-id="${car.car_id}">
           <div class="cart-item-main">
             ${imageTag}
             <div>
@@ -114,7 +128,10 @@ function renderCart(cars) {
               <p class="cart-item-meta">ID: ${escapeHtml(car.car_id ?? "n/a")}</p>
             </div>
           </div>
-          <p class="cart-item-price">${formatPrice(car.price)} ₽</p>
+          <div class="cart-item-actions">
+            <p class="cart-item-price">${formatPrice(car.price)} ₽</p>
+            <button type="button" data-action="remove" data-car-id="${car.car_id}">Вернуть в каталог</button>
+          </div>
         </li>
       `;
     })
@@ -167,6 +184,15 @@ async function buyAllCart() {
   clearGuestCart();
   renderCart([]);
   setStatus(hadItems ? "Корзина очищена." : "Корзина уже пуста.", "success");
+  window.dispatchEvent(new Event("cart-updated"));
+}
+
+function clearCart() {
+  const hadItems = currentCartItems.length > 0 || getGuestCartIds().length > 0;
+  clearGuestCart();
+  renderCart([]);
+  setStatus(hadItems ? "Корзина удалена и товары вернулись в каталог." : "Корзина уже пуста.", "success");
+  window.dispatchEvent(new Event("cart-updated"));
 }
 
 refreshButton.addEventListener("click", loadCart);
@@ -182,10 +208,42 @@ buyAllButton.addEventListener("click", async () => {
   }
 });
 
+cartList.addEventListener("click", async (event) => {
+  const button = event.target.closest("button[data-action]");
+  if (!button) return;
+
+  const action = button.dataset.action;
+  const carId = Number(button.dataset.carId);
+  if (!Number.isInteger(carId) || carId <= 0) return;
+
+  if (action === "remove") {
+    button.disabled = true;
+    const removed = removeGuestCarId(carId);
+    if (removed) {
+      setStatus("Машина удалена из корзины и возвращена в каталог.", "success");
+      window.dispatchEvent(new Event("cart-updated"));
+      await loadCart();
+    } else {
+      setStatus("Машина не найдена в корзине.", "error");
+    }
+    button.disabled = false;
+  }
+});
+
 async function initCartPage() {
   const allowed = await (authApi?.ensureUserSession?.() ?? Promise.resolve(true));
   if (!allowed) return;
   loadCart();
+
+  window.addEventListener("cart-updated", () => {
+    loadCart();
+  });
+
+  window.addEventListener("storage", (event) => {
+    if (event.key === GUEST_CART_KEY) {
+      loadCart();
+    }
+  });
 }
 
 initCartPage();

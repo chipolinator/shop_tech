@@ -141,6 +141,16 @@ function addGuestCarId(carId) {
   return true;
 }
 
+function removeGuestCarId(carId) {
+  const ids = getGuestCartIds();
+  const filtered = ids.filter((id) => id !== carId);
+  if (filtered.length === ids.length) {
+    return false;
+  }
+  saveGuestCartIds(filtered);
+  return true;
+}
+
 function buildImageUrl(imagePath) {
   if (!imagePath) return "";
   if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) return imagePath;
@@ -195,8 +205,8 @@ function renderCars(cars, emptyText) {
       const actionButtons = hasValidId
         ? `
           <div class="controls">
-            <button type="button" data-action="add" data-car-id="${id}" ${isInCart ? "disabled" : ""}>
-              ${isInCart ? "В корзине" : "В корзину"}
+            <button type="button" data-action="${isInCart ? "remove" : "add"}" data-car-id="${id}" class="${isInCart ? "in-cart" : ""}">
+              ${isInCart ? "Удалить из корзины" : "В корзину"}
             </button>
           </div>
         `
@@ -257,7 +267,20 @@ async function loadCars() {
 }
 
 async function addCarToCart(carId) {
-  return addGuestCarId(carId);
+  const added = addGuestCarId(carId);
+  window.dispatchEvent(new Event("cart-updated"));
+  return added;
+}
+
+function setButtonInCartState(button, inCart) {
+  button.disabled = false;
+  button.textContent = inCart ? "Удалить из корзины" : "В корзину";
+  button.dataset.action = inCart ? "remove" : "add";
+  if (inCart) {
+    button.classList.add("in-cart");
+  } else {
+    button.classList.remove("in-cart");
+  }
 }
 
 carsList.addEventListener("click", async (event) => {
@@ -266,18 +289,36 @@ carsList.addEventListener("click", async (event) => {
 
   const action = button.dataset.action;
   const carId = Number(button.dataset.carId);
-  if (!Number.isInteger(carId) || action !== "add") {
+  if (!Number.isInteger(carId) || (action !== "add" && action !== "remove")) {
     return;
   }
 
   button.disabled = true;
-  const added = await addCarToCart(carId);
-  if (added) {
-    button.textContent = "В корзине";
-    return;
+  button.textContent = action === "add" ? "Добавляется..." : "Удаляется...";
+
+  let success = false;
+  if (action === "add") {
+    success = addGuestCarId(carId);
+    if (success) {
+      setStatus("Машина добавлена в корзину.", "success");
+    } else {
+      setStatus("Эта машина уже есть в корзине.", "error");
+    }
+  } else if (action === "remove") {
+    success = removeGuestCarId(carId);
+    if (success) {
+      setStatus("Машина удалена из корзины.", "success");
+    } else {
+      setStatus("Машина не найдена в корзине.", "error");
+    }
   }
 
-  button.textContent = "В корзине";
+  window.dispatchEvent(new Event("cart-updated"));
+
+  button.disabled = false;
+  const guestCartIds = new Set(getGuestCartIds());
+  const inCart = guestCartIds.has(carId);
+  setButtonInCartState(button, inCart);
 });
 
 if (brandFilters) {
@@ -294,6 +335,16 @@ async function initCarsPage() {
   const allowed = await (authApi?.ensureUserSession?.() ?? Promise.resolve(true));
   if (!allowed) return;
   loadCars();
+
+  window.addEventListener("cart-updated", () => {
+    renderCatalog();
+  });
+
+  window.addEventListener("storage", (event) => {
+    if (event.key === GUEST_CART_KEY) {
+      renderCatalog();
+    }
+  });
 }
 
 initCarsPage();
