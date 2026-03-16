@@ -32,20 +32,19 @@
     <section class="container">
       <h1 class="page-title">Каталог</h1>
 
-      <section class="card catalog-search-card" aria-label="Поиск по каталогу">
+      <section class="card catalog-search-card">
         <form
           class="catalog-search-form"
           data-catalog-search
           role="search"
-          aria-label="Поиск по каталогу"
         >
-          <label class="sr-only" for="catalog-search">Поиск по каталогу</label>
           <input
             id="catalog-search"
             name="search"
             type="search"
-            placeholder="Поиск по марке или модели"
             autocomplete="off"
+            placeholder="Поиск по объявлениям"
+            aria-label="Поиск"
           >
         </form>
       </section>
@@ -54,9 +53,6 @@
         <div class="brand-filter-header">
           <div>
             <h2 id="brand-filter-title">Фильтр по марке</h2>
-            <p class="muted brand-filter-note">
-              Нажмите на кнопку марки, чтобы оставить в каталоге только выбранные машины.
-            </p>
           </div>
         </div>
         <div id="brand-filters" class="filter-chips" role="group" aria-label="Список марок"></div>
@@ -73,7 +69,7 @@
   </main>
 
   <footer class="footer">
-    <p>team monopolics</p>
+    <p>team monopoliks</p>
   </footer>
 
   <script src="/static/auth.js"></script>

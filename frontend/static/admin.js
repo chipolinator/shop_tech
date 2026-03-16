@@ -2,8 +2,6 @@ const API_BASE = `/api`;
 const authApi = window.ShopTechAuth;
 const ENDPOINTS = {
   createCar: `${API_BASE}/admin/create_car`,
-  allUsers: `${API_BASE}/admin/all_users`,
-  deleteUser: `${API_BASE}/admin/delete_user`,
   deleteCar: `${API_BASE}/admin/delete_car`,
 };
 
@@ -18,16 +16,12 @@ const adminActions = document.createElement("div");
 adminActions.className = "stack-form";
 adminActions.innerHTML = `
   <div class="controls">
-    <button type="button" id="admin-load-users">Список пользователей</button>
-    <button type="button" id="admin-delete-user">Удалить пользователя</button>
     <button type="button" id="admin-delete-car">Удалить машину</button>
   </div>
   <p id="admin-actions-status" class="status-line" role="status" aria-live="polite"></p>
 `;
 createCarForm.insertAdjacentElement("afterend", adminActions);
 
-const loadUsersButton = document.getElementById("admin-load-users");
-const deleteUserButton = document.getElementById("admin-delete-user");
 const deleteCarButton = document.getElementById("admin-delete-car");
 const actionsStatus = document.getElementById("admin-actions-status");
 
@@ -187,36 +181,6 @@ createCarForm.addEventListener("submit", async (event) => {
   } finally {
     button.disabled = false;
   }
-});
-
-loadUsersButton.addEventListener("click", async () => {
-  loadUsersButton.disabled = true;
-  setStatus(actionsStatus, "Загружаю пользователей...");
-
-  const result = await runAdminRequest(ENDPOINTS.allUsers);
-  if (result.ok) {
-    const count = Array.isArray(result.data) ? result.data.length : 0;
-    setStatus(actionsStatus, `Пользователей получено: ${count}.`, "success");
-  }
-
-  loadUsersButton.disabled = false;
-});
-
-deleteUserButton.addEventListener("click", async () => {
-  const id = askPositiveId("Введите ID пользователя для удаления:");
-  if (id === null) return;
-
-  deleteUserButton.disabled = true;
-  setStatus(actionsStatus, "Удаляю пользователя...");
-
-  const result = await runAdminRequest(`${ENDPOINTS.deleteUser}?id=${encodeURIComponent(id)}`, {
-    method: "DELETE",
-  });
-  if (result.ok) {
-    setStatus(actionsStatus, `Пользователь ${id} удалён.`, "success");
-  }
-
-  deleteUserButton.disabled = false;
 });
 
 deleteCarButton.addEventListener("click", async () => {

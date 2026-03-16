@@ -71,7 +71,7 @@ body::before {
 .topbar .container {
   width: 100%;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
   gap: 0.9rem;
   padding: 0.68rem 1rem;
@@ -448,6 +448,24 @@ button:disabled {
 .controls .status-line {
   flex: 1 1 220px;
   margin: 0;
+}
+
+.catalog-search-card {
+  margin: 0 0 0.82rem;
+  padding: 0.9rem;
+}
+
+.catalog-search-form {
+  width: min(680px, 100%);
+}
+
+.catalog-search-form input {
+  width: 100%;
+  min-height: 56px;
+  padding: 0.88rem 1.1rem;
+  border-radius: 18px;
+  font-size: 1.04rem;
+  background: linear-gradient(180deg, #fffdfd 0%, #f8eef1 100%);
 }
 
 .brand-filter {
