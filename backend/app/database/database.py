@@ -1,8 +1,8 @@
 from sqlmodel import create_engine, Session, SQLModel, select, delete
 from config import settings
-import models
+from models import user as user_models
 from schemas.models import User as UserDB, Admin, Car, CarUpdate
-import utils.security
+from utils import security
 
 
 engine = create_engine(settings.DATABASE_URL)
@@ -12,9 +12,9 @@ def create_db_and_tables():
     SQLModel.metadata.create_all(engine)
 
 
-def add_user_db(user: models.user.UserCreateResponse):
+def add_user_db(user: user_models.UserCreateResponse):
     with Session(engine) as session:
-        hashed_password = utils.security.hash_password(user.password)
+        hashed_password = security.hash_password(user.password)
         db_user = UserDB(username=user.name,
                          hashed_password=hashed_password)
         session.add(db_user)
@@ -37,18 +37,6 @@ def get_user_by_name(name: str):
         return result
 
 
-def delete_user_by_id(id: int):
-    with Session(engine) as session:
-        session.exec(delete(UserDB).where(UserDB.id == id))
-        session.commit()
-
-
-def get_users():
-    with Session(engine) as session:
-        result = session.execute(select(UserDB.id, UserDB.name))
-        return [models.user.UserDBResponse(name=res.username, id=res.id) for res in result]
-
-
 def add_car_db(car: Car):
     with Session(engine) as session:
         session.add(car)
@@ -63,10 +51,14 @@ def get_cars():
         return cars
 
 
+def get_car_by_id(id: int):
+    with Session(engine) as session:
+        return session.get(Car, id)
+
+
 def delete_car_by_id(id: int):
     with Session(engine) as session:
-        statement = delete(Car).where(Car.id == id)
-        result = session.exec(statement)
+        session.exec(delete(Car).where(Car.id == id))
         session.commit()
 
 
@@ -91,7 +83,7 @@ def create_admin(name: str, password: str):
         statement = select(Admin).where(Admin.username == name)
         admin = session.execute(statement).scalar_one_or_none()
         if not admin:
-            hashed_password = utils.security.hash_password(password)
+            hashed_password = security.hash_password(password)
             admin = Admin(username=name, hashed_password=hashed_password)
             session.add(admin)
             session.commit()

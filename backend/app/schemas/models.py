@@ -23,7 +23,7 @@ class DriveType(str, Enum):
 
 
 class Car(SQLModel, table=True):
-    id: int = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     brand: str
     model: str
     power: int = Field(gt=0)

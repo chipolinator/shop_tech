@@ -2,7 +2,7 @@ const API_BASE = `/api`;
 const authApi = window.ShopTechAuth;
 const ENDPOINTS = {
   createCar: `${API_BASE}/admin/create_car`,
-  listCars: `${API_BASE}/cars/all`,
+  getCar: `${API_BASE}/admin/car`,
   deleteCar: `${API_BASE}/admin/delete_car`,
   updateCar: `${API_BASE}/admin/update_car`,
 };
@@ -99,46 +99,33 @@ function askCarField(title, currentValue) {
   return nextValue.trim();
 }
 
+function cancelCarEdit() {
+  setStatus(actionsStatus, "Редактирование отменено.");
+  return null;
+}
+
 function normalizeDriveValue(rawValue) {
   return String(rawValue ?? "").trim().toLowerCase();
 }
 
 function buildCarUpdatePayload(car) {
   const brand = askCarField("Марка:", car.brand);
-  if (brand === null) {
-    setStatus(actionsStatus, "Редактирование отменено.");
-    return null;
-  }
+  if (brand === null) return cancelCarEdit();
 
   const model = askCarField("Модель:", car.model);
-  if (model === null) {
-    setStatus(actionsStatus, "Редактирование отменено.");
-    return null;
-  }
+  if (model === null) return cancelCarEdit();
 
   const powerRaw = askCarField("Мощность (л.с.):", car.power);
-  if (powerRaw === null) {
-    setStatus(actionsStatus, "Редактирование отменено.");
-    return null;
-  }
+  if (powerRaw === null) return cancelCarEdit();
 
   const displacementRaw = askCarField("Объём двигателя (л):", car.displacement);
-  if (displacementRaw === null) {
-    setStatus(actionsStatus, "Редактирование отменено.");
-    return null;
-  }
+  if (displacementRaw === null) return cancelCarEdit();
 
   const driveRaw = askCarField("Привод (front, rear, all):", car.drive);
-  if (driveRaw === null) {
-    setStatus(actionsStatus, "Редактирование отменено.");
-    return null;
-  }
+  if (driveRaw === null) return cancelCarEdit();
 
   const priceRaw = askCarField("Цена:", car.price);
-  if (priceRaw === null) {
-    setStatus(actionsStatus, "Редактирование отменено.");
-    return null;
-  }
+  if (priceRaw === null) return cancelCarEdit();
 
   const power = Number(powerRaw);
   const displacement = Number(displacementRaw.replace(",", "."));
@@ -222,6 +209,26 @@ async function runAdminRequest(url, options = {}, statusNode = actionsStatus) {
   }
 }
 
+async function withDisabledButton(button, action) {
+  button.disabled = true;
+  try {
+    await action();
+  } finally {
+    button.disabled = false;
+  }
+}
+
+async function fetchCarById(id) {
+  setStatus(actionsStatus, "Загружаю данные машины...");
+
+  const carResult = await runAdminRequest(`${ENDPOINTS.getCar}?id=${encodeURIComponent(id)}`);
+  if (!carResult.ok || !carResult.data || typeof carResult.data !== "object") {
+    return null;
+  }
+
+  return carResult.data;
+}
+
 createCarForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const button = createCarForm.querySelector("button[type='submit']");
@@ -278,60 +285,40 @@ editCarButton.addEventListener("click", async () => {
   const id = askPositiveId("Введите ID машины для редактирования:");
   if (id === null) return;
 
-  editCarButton.disabled = true;
-  setStatus(actionsStatus, "Загружаю данные машины...");
+  await withDisabledButton(editCarButton, async () => {
+    const car = await fetchCarById(id);
+    if (!car) return;
 
-  const carsResult = await runAdminRequest(ENDPOINTS.listCars);
-  if (!carsResult.ok) {
-    editCarButton.disabled = false;
-    return;
-  }
+    const payload = buildCarUpdatePayload(car);
+    if (!payload) return;
 
-  const car = Array.isArray(carsResult.data)
-    ? carsResult.data.find((item) => Number(item.id) === id)
-    : null;
+    setStatus(actionsStatus, "Сохраняю изменения...");
 
-  if (!car) {
-    setStatus(actionsStatus, `Машина ${id} не найдена.`, "error");
-    editCarButton.disabled = false;
-    return;
-  }
-
-  const payload = buildCarUpdatePayload(car);
-  if (!payload) {
-    editCarButton.disabled = false;
-    return;
-  }
-
-  setStatus(actionsStatus, "Сохраняю изменения...");
-
-  const result = await runAdminRequest(`${ENDPOINTS.updateCar}?id=${encodeURIComponent(id)}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
+    const result = await runAdminRequest(`${ENDPOINTS.updateCar}?id=${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (result.ok) {
+      setStatus(actionsStatus, `Машина ${id} обновлена.`, "success");
+    }
   });
-  if (result.ok) {
-    setStatus(actionsStatus, `Машина ${id} обновлена.`, "success");
-  }
-
-  editCarButton.disabled = false;
 });
 
 deleteCarButton.addEventListener("click", async () => {
   const id = askPositiveId("Введите ID машины для удаления:");
   if (id === null) return;
 
-  deleteCarButton.disabled = true;
-  setStatus(actionsStatus, "Удаляю машину...");
+  await withDisabledButton(deleteCarButton, async () => {
+    setStatus(actionsStatus, "Удаляю машину...");
 
-  const result = await runAdminRequest(`${ENDPOINTS.deleteCar}?id=${encodeURIComponent(id)}`, {
-    method: "DELETE",
+    const result = await runAdminRequest(`${ENDPOINTS.deleteCar}?id=${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    });
+    if (result.ok) {
+      setStatus(actionsStatus, `Машина ${id} удалена.`, "success");
+    }
   });
-  if (result.ok) {
-    setStatus(actionsStatus, `Машина ${id} удалена.`, "success");
-  }
-
-  deleteCarButton.disabled = false;
 });
 
 logoutButton.addEventListener("click", () => {

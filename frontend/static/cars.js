@@ -467,7 +467,8 @@ carsList.addEventListener("click", async (event) => {
   }
 
   if (changed) {
-    window.dispatchEvent(new Event("cart-updated"));
+    renderCatalog();
+    return;
   }
 
   const inCart = getGuestCartIds().includes(carId);

@@ -6,12 +6,14 @@ from config import settings
 from datetime import timedelta
 from schemas.models import DriveType, Car, CarUpdate
 from pathlib import Path
-from database.database import add_car_db, delete_car_by_id, delete_user_by_id, get_users, update_car_by_id
+from database.database import add_car_db, delete_car_by_id, get_car_by_id, update_car_by_id
 from PIL import Image
 import io
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/admin/token")
 router = APIRouter()
+UPLOAD_DIR = Path("/app/uploads/cars")
+ALLOWED_IMAGE_FORMATS = {"JPEG", "PNG"}
 
 
 async def get_admin(token: Annotated[str, Depends(oauth2_scheme)]):
@@ -41,17 +43,39 @@ async def get_me(admin: Annotated[str, Depends(get_admin)]):
     return {"username": admin}
 
 
-UPLOAD_DIR = "/app/uploads/cars"
+def validate_image_upload(contents: bytes):
+    try:
+        image = Image.open(io.BytesIO(contents))
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail="File Error!") from exc
+
+    if image.format not in ALLOWED_IMAGE_FORMATS:
+        raise HTTPException(status_code=400, detail=f"Only PNG и JPEG! Get {image.format}")
+
+
+def save_car_image(filename: str, contents: bytes) -> str:
+    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    file_path = UPLOAD_DIR / filename
+    file_path.write_bytes(contents)
+    return f"uploads/cars/{filename}"
 
 
 @router.delete("/delete_car", status_code=200)
-async def delete_car(admin: Annotated[settings.ADMIN_NAME, Depends(get_admin)], id: int):
+async def delete_car(admin: Annotated[str, Depends(get_admin)], id: int):
     delete_car_by_id(id)
+
+
+@router.get("/car", status_code=200)
+async def get_car(admin: Annotated[str, Depends(get_admin)], id: int):
+    car = get_car_by_id(id)
+    if not car:
+        raise HTTPException(status_code=404, detail="Car not found")
+    return car
 
 
 @router.patch("/update_car", status_code=200)
 async def update_car(
-    admin: Annotated[settings.ADMIN_NAME, Depends(get_admin)],
+    admin: Annotated[str, Depends(get_admin)],
     id: int,
     car_data: CarUpdate,
 ):
@@ -61,54 +85,29 @@ async def update_car(
     return updated_car
 
 
-@router.delete("/delete_user", status_code=200)
-async def delete_user(admin: Annotated[settings.ADMIN_NAME, Depends(get_admin)], id: int):
-    delete_user_by_id(id)
-@router.get("/all_users",status_code=200)
-async def get_all_users(admin: Annotated[settings.ADMIN_NAME, Depends(get_admin)]):
-    return get_users()
-
-
 @router.post("/create_car", status_code=200)
-async def create_car(admin: Annotated[settings.ADMIN_NAME, Depends(get_admin)],
-                     brand: str = Form(...),
-                     model: str = Form(...),
-                     power: int = Form(...),
-                     displacement: float = Form(...),
-                     drive: DriveType = Form(...),
-                     price: float = Form(...),
-                     image: UploadFile = File(...)):
-    allowed_formats = {'JPEG', 'PNG'}
-    try:
-        contents = await image.read()
-        img = Image.open(io.BytesIO(contents))
-        if img.format not in allowed_formats:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Only PNG и JPEG! Get {img.format}"
-            )
-    except Exception as e:
-        print(e)
-        raise HTTPException(
-            status_code=400,
-            detail="File Error!"
-        )
-
-    Path("/app/uploads/cars").mkdir(parents=True, exist_ok=True)
-    file_path = f"/app/uploads/cars/{image.filename}"
-    with open(file_path, "wb") as buffer:
-        buffer.write(contents)
-
-    db_image_path = f"uploads/cars/{image.filename}"
+async def create_car(
+    admin: Annotated[str, Depends(get_admin)],
+    brand: str = Form(...),
+    model: str = Form(...),
+    power: int = Form(...),
+    displacement: float = Form(...),
+    drive: DriveType = Form(...),
+    price: int = Form(...),
+    image: UploadFile = File(...),
+):
+    contents = await image.read()
+    validate_image_upload(contents)
+    db_image_path = save_car_image(image.filename, contents)
 
     db_car = Car(
         brand=brand,
         model=model,
         power=power,
         displacement=displacement,
-        drive=DriveType(drive),
+        drive=drive,
         price=price,
-        image_path=db_image_path
+        image_path=db_image_path,
     )
     add_car_db(db_car)
     return db_car

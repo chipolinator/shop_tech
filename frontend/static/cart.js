@@ -5,8 +5,6 @@ const ENDPOINTS = {
   listCars: `${API_BASE}/cars/all`,
 };
 
-const refreshButton = document.getElementById("refresh-cart");
-const goToCarsButton = document.getElementById("go-to-cars");
 const buyAllButton = document.getElementById("buy-all");
 const status = document.getElementById("cart-status");
 const cartList = document.getElementById("cart-list");
@@ -97,12 +95,6 @@ function formatPrice(value) {
   return Number(value || 0).toLocaleString("ru-RU");
 }
 
-function setButtonDisabled(button, disabled) {
-  if (button) {
-    button.disabled = disabled;
-  }
-}
-
 function updateSummary(cars) {
   const total = cars.reduce((sum, car) => sum + Number(car.price || 0), 0);
   cartCount.textContent = String(cars.length);
@@ -146,8 +138,6 @@ function renderCart(cars) {
 
 async function loadCart() {
   const guestIds = getGuestCartIds();
-  setButtonDisabled(refreshButton, true);
-  setButtonDisabled(goToCarsButton, true);
   setStatus("Загрузка корзины...");
 
   try {
@@ -179,23 +169,15 @@ async function loadCart() {
     setStatus("");
   } catch {
     setStatus("Нет соединения с backend.", "error");
-  } finally {
-    setButtonDisabled(refreshButton, false);
-    setButtonDisabled(goToCarsButton, false);
   }
 }
 
 async function buyAllCart() {
-  const hadItems = currentCartItems.length > 0 || getGuestCartIds().length > 0;
   clearGuestCart();
   renderCart([]);
-  setStatus(hadItems ? "Корзина очищена." : "Корзина уже пуста.", "success");
+  setStatus("Корзина очищена.", "success");
 }
 
-refreshButton?.addEventListener("click", loadCart);
-goToCarsButton?.addEventListener("click", () => {
-  window.location.href = "/cars.html";
-});
 buyAllButton.addEventListener("click", async () => {
   buyAllButton.disabled = true;
   try {
@@ -218,7 +200,6 @@ cartList.addEventListener("click", async (event) => {
     const removed = removeGuestCarId(carId);
     if (removed) {
       setStatus("Машина удалена из корзины.", "success");
-      window.dispatchEvent(new Event("cart-updated"));
       await loadCart();
     } else {
       setStatus("Машина не найдена в корзине.", "error");
