@@ -371,9 +371,14 @@ button:hover {
 
 button:disabled {
   opacity: 0.72;
-  cursor: wait;
+  cursor: not-allowed;
   transform: none;
   box-shadow: 0 4px 8px rgba(133, 40, 54, 0.18);
+}
+
+.car-card .controls button:disabled {
+  cursor: default;
+  background: linear-gradient(135deg, #6ca26c 0%, #479a4e 100%);
 }
 
 #form-status,
