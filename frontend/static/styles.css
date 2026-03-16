@@ -523,6 +523,63 @@ button:disabled {
   gap: 0.86rem;
 }
 
+.catalog-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+  margin: 1rem 0 0;
+}
+
+.catalog-pagination[hidden] {
+  display: none;
+}
+
+.catalog-pagination-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.42rem;
+  flex-wrap: wrap;
+}
+
+.catalog-pagination-controls button {
+  margin-top: 0;
+  min-width: 2.7rem;
+  padding: 0.5rem 0.76rem;
+  border: 1px solid #e1c0c8;
+  background: linear-gradient(180deg, #fff9fa 0%, #f9eaee 100%);
+  color: #7a4954;
+  box-shadow: none;
+}
+
+.catalog-pagination-controls button:hover {
+  box-shadow: none;
+  filter: none;
+}
+
+.catalog-page-button.is-active {
+  border-color: transparent;
+  background: linear-gradient(135deg, var(--primary) 0%, #c94b5d 100%);
+  color: #fff;
+  box-shadow: 0 8px 14px rgba(157, 46, 63, 0.2);
+}
+
+.catalog-page-button.is-active:hover {
+  box-shadow: 0 10px 16px rgba(138, 39, 53, 0.22);
+}
+
+.catalog-page-nav {
+  min-width: 5.7rem;
+}
+
+.catalog-pagination-ellipsis {
+  color: var(--muted);
+  padding: 0 0.24rem;
+  user-select: none;
+}
+
 .car-card {
   padding: 0.88rem;
 }
@@ -546,21 +603,11 @@ button:disabled {
 
 .car-card .controls button {
   flex: 1 1 auto;
-  transition: background 0.15s ease, transform 0.15s ease;
 }
 
-.car-card .controls button:active {
-  transform: translateY(1px);
-}
-
-.car-card .controls button.in-cart,
-.car-card .controls button.in-cart:hover {
-  background: linear-gradient(135deg, #6ba56b 0%, #4e8c4e 100%);
-  color: #fff;
-}
-
-.car-card .controls button.in-cart:active {
-  transform: translateY(1px);
+.car-card .controls button.in-cart {
+  background: linear-gradient(135deg, #6ca26c 0%, #479a4e 100%);
+  box-shadow: 0 4px 8px rgba(66, 102, 66, 0.25);
 }
 
 .car-image {
@@ -837,5 +884,14 @@ button:disabled {
 
   .controls button {
     flex: 1 1 auto;
+  }
+
+  .catalog-pagination {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .catalog-pagination-controls {
+    justify-content: center;
   }
 }

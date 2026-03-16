@@ -9,13 +9,20 @@ const DRIVE_LABELS = {
   rear: "задний",
   all: "полный",
 };
+const CARS_PER_PAGE = 12;
+const MAX_VISIBLE_PAGE_BUTTONS = 5;
 const priceFormatter = new Intl.NumberFormat("ru-RU");
 
 const brandFilters = document.getElementById("brand-filters");
 const carsList = document.getElementById("cars-list");
+const pagination = document.getElementById("catalog-pagination");
+const searchForm = document.querySelector("[data-catalog-search]");
+const searchInput = document.getElementById("catalog-search");
 
 let allCars = [];
 let activeBrand = "";
+let searchQuery = "";
+let currentPage = 1;
 
 function setStatus(text, type = "") {
   const status = document.getElementById("cars-status");
@@ -74,11 +81,80 @@ function getBrandGroups(cars) {
     .sort((left, right) => left.brand.localeCompare(right.brand, "ru", { sensitivity: "base" }));
 }
 
+function normalizeSearchQuery(value) {
+  return String(value ?? "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .toLocaleLowerCase("ru-RU");
+}
+
+function matchesSearchQuery(car, query) {
+  if (!query) return true;
+
+  const searchableText = [
+    getCarBrand(car),
+    car?.model ?? "",
+    car?.drive ?? "",
+  ]
+    .join(" ")
+    .toLocaleLowerCase("ru-RU");
+
+  return searchableText.includes(query);
+}
+
 function getFilteredCars() {
+  const searchedCars = allCars.filter((car) => matchesSearchQuery(car, searchQuery));
+
   if (!activeBrand) {
-    return allCars;
+    return searchedCars;
   }
-  return allCars.filter((car) => getCarBrand(car) === activeBrand);
+
+  return searchedCars.filter((car) => getCarBrand(car) === activeBrand);
+}
+
+function getTotalPages(totalItems) {
+  return Math.max(1, Math.ceil(totalItems / CARS_PER_PAGE));
+}
+
+function getPaginatedCars(cars) {
+  const totalPages = getTotalPages(cars.length);
+  currentPage = Math.min(Math.max(1, currentPage), totalPages);
+
+  const startIndex = (currentPage - 1) * CARS_PER_PAGE;
+  return cars.slice(startIndex, startIndex + CARS_PER_PAGE);
+}
+
+function getVisiblePageItems(totalPages) {
+  if (totalPages <= MAX_VISIBLE_PAGE_BUTTONS) {
+    return Array.from({ length: totalPages }, (_, index) => index + 1);
+  }
+
+  const items = [1];
+  let startPage = Math.max(2, currentPage - 1);
+  let endPage = Math.min(totalPages - 1, currentPage + 1);
+
+  if (currentPage <= 3) {
+    startPage = 2;
+    endPage = 4;
+  } else if (currentPage >= totalPages - 2) {
+    startPage = totalPages - 3;
+    endPage = totalPages - 1;
+  }
+
+  if (startPage > 2) {
+    items.push("ellipsis-start");
+  }
+
+  for (let page = startPage; page <= endPage; page += 1) {
+    items.push(page);
+  }
+
+  if (endPage < totalPages - 1) {
+    items.push("ellipsis-end");
+  }
+
+  items.push(totalPages);
+  return items;
 }
 
 function createBrandFilterButton(label, brand) {
@@ -136,6 +212,7 @@ function addGuestCarId(carId) {
   if (ids.includes(carId)) {
     return false;
   }
+
   ids.push(carId);
   saveGuestCartIds(ids);
   return true;
@@ -147,6 +224,7 @@ function removeGuestCarId(carId) {
   if (filtered.length === ids.length) {
     return false;
   }
+
   saveGuestCartIds(filtered);
   return true;
 }
@@ -190,7 +268,7 @@ function renderCars(cars, emptyText) {
     return;
   }
 
-  const guestCartIds = new Set(getGuestCartIds());
+  const cartIds = getGuestCartIds();
 
   carsList.innerHTML = cars
     .map((car) => {
@@ -201,12 +279,15 @@ function renderCars(cars, emptyText) {
         : '<div class="car-image placeholder">Без изображения</div>';
       const id = Number(car.id);
       const hasValidId = Number.isInteger(id) && id > 0;
-      const isInCart = hasValidId && guestCartIds.has(id);
+      const inCart = hasValidId && cartIds.includes(id);
+      const action = inCart ? "remove" : "add";
+      const actionText = inCart ? "Удалить из корзины" : "В корзину";
+      const actionClass = inCart ? "in-cart" : "";
       const actionButtons = hasValidId
         ? `
           <div class="controls">
-            <button type="button" data-action="${isInCart ? "remove" : "add"}" data-car-id="${id}" class="${isInCart ? "in-cart" : ""}">
-              ${isInCart ? "Удалить из корзины" : "В корзину"}
+            <button type="button" data-action="${action}" data-car-id="${id}" class="${actionClass}">
+              ${actionText}
             </button>
           </div>
         `
@@ -227,14 +308,77 @@ function renderCars(cars, emptyText) {
     .join("");
 }
 
+function renderPagination(totalItems) {
+  if (!pagination) return;
+
+  if (totalItems <= CARS_PER_PAGE) {
+    pagination.hidden = true;
+    pagination.innerHTML = "";
+    return;
+  }
+
+  const totalPages = getTotalPages(totalItems);
+  const pageItems = getVisiblePageItems(totalPages);
+
+  pagination.hidden = false;
+  pagination.innerHTML = `
+    <div class="catalog-pagination-controls">
+      <button
+        type="button"
+        class="catalog-page-nav"
+        data-page-action="prev"
+        ${currentPage === 1 ? "disabled" : ""}
+      >
+        Назад
+      </button>
+      ${pageItems
+        .map((item) => {
+          if (typeof item !== "number") {
+            return '<span class="catalog-pagination-ellipsis" aria-hidden="true">…</span>';
+          }
+
+          const activeClass = item === currentPage ? " is-active" : "";
+          const currentAttribute = item === currentPage ? ' aria-current="page"' : "";
+
+          return `
+            <button
+              type="button"
+              class="catalog-page-button${activeClass}"
+              data-page="${item}"${currentAttribute}
+            >
+              ${item}
+            </button>
+          `;
+        })
+        .join("")}
+      <button
+        type="button"
+        class="catalog-page-nav"
+        data-page-action="next"
+        ${currentPage === totalPages ? "disabled" : ""}
+      >
+        Вперёд
+      </button>
+    </div>
+  `;
+}
+
 function renderCatalog() {
   const filteredCars = getFilteredCars();
-  const emptyText = activeBrand
-    ? `Машины марки "${activeBrand}" не найдены.`
-    : "Пока нет ни одной машины.";
+  const pageCars = getPaginatedCars(filteredCars);
+  let emptyText = "Пока нет ни одной машины.";
+
+  if (searchQuery && activeBrand) {
+    emptyText = `По запросу "${searchInput?.value.trim() ?? searchQuery}" в марке "${activeBrand}" машины не найдены.`;
+  } else if (searchQuery) {
+    emptyText = `По запросу "${searchInput?.value.trim() ?? searchQuery}" машины не найдены.`;
+  } else if (activeBrand) {
+    emptyText = `Машины марки "${activeBrand}" не найдены.`;
+  }
 
   renderBrandFilters(allCars);
-  renderCars(filteredCars, emptyText);
+  renderCars(pageCars, emptyText);
+  renderPagination(filteredCars.length);
 }
 
 async function loadCars() {
@@ -247,8 +391,10 @@ async function loadCars() {
     if (!response.ok || !Array.isArray(data)) {
       allCars = [];
       activeBrand = "";
+      currentPage = 1;
       renderBrandFilters([]);
       renderCars([], `Ошибка загрузки машин${errorDetail(response, data)}`);
+      renderPagination(0);
       return;
     }
 
@@ -261,21 +407,33 @@ async function loadCars() {
   } catch {
     allCars = [];
     activeBrand = "";
+    currentPage = 1;
     renderBrandFilters([]);
     renderCars([], "Нет соединения с backend.");
+    renderPagination(0);
   }
 }
 
 async function addCarToCart(carId) {
-  const added = addGuestCarId(carId);
-  window.dispatchEvent(new Event("cart-updated"));
-  return added;
+  try {
+    const added = addGuestCarId(carId);
+    if (added) {
+      setStatus("Машина добавлена в корзину.", "success");
+    } else {
+      setStatus("Эта машина уже есть в корзине.");
+    }
+    return added;
+  } catch (error) {
+    console.error("Failed to add car to cart", error);
+    setStatus("Не удалось добавить машину в корзину.", "error");
+    return false;
+  }
 }
 
 function setButtonInCartState(button, inCart) {
-  button.disabled = false;
-  button.textContent = inCart ? "Удалить из корзины" : "В корзину";
+  button.disabled = inCart;
   button.dataset.action = inCart ? "remove" : "add";
+  button.textContent = inCart ? "Удалить из корзины" : "В корзину";
   if (inCart) {
     button.classList.add("in-cart");
   } else {
@@ -294,31 +452,27 @@ carsList.addEventListener("click", async (event) => {
   }
 
   button.disabled = true;
-  button.textContent = action === "add" ? "Добавляется..." : "Удаляется...";
+  let changed = false;
 
-  let success = false;
   if (action === "add") {
-    success = addGuestCarId(carId);
-    if (success) {
-      setStatus("Машина добавлена в корзину.", "success");
-    } else {
-      setStatus("Эта машина уже есть в корзине.", "error");
-    }
-  } else if (action === "remove") {
-    success = removeGuestCarId(carId);
-    if (success) {
+    changed = await addCarToCart(carId);
+  } else {
+    const removed = removeGuestCarId(carId);
+    changed = removed;
+    if (removed) {
       setStatus("Машина удалена из корзины.", "success");
     } else {
       setStatus("Машина не найдена в корзине.", "error");
     }
   }
 
-  window.dispatchEvent(new Event("cart-updated"));
+  if (changed) {
+    window.dispatchEvent(new Event("cart-updated"));
+  }
 
-  button.disabled = false;
-  const guestCartIds = new Set(getGuestCartIds());
-  const inCart = guestCartIds.has(carId);
+  const inCart = getGuestCartIds().includes(carId);
   setButtonInCartState(button, inCart);
+  button.disabled = false;
 });
 
 if (brandFilters) {
@@ -327,24 +481,48 @@ if (brandFilters) {
     if (!button) return;
 
     activeBrand = button.dataset.brand ?? "";
+    currentPage = 1;
     renderCatalog();
   });
 }
+
+searchInput?.addEventListener("input", (event) => {
+  searchQuery = normalizeSearchQuery(event.target.value);
+  currentPage = 1;
+  renderCatalog();
+});
+
+searchForm?.addEventListener("submit", (event) => {
+  event.preventDefault();
+});
+
+pagination?.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-page], button[data-page-action]");
+  if (!button) return;
+
+  const totalPages = getTotalPages(getFilteredCars().length);
+  let nextPage = currentPage;
+
+  if (button.dataset.pageAction === "prev") {
+    nextPage -= 1;
+  } else if (button.dataset.pageAction === "next") {
+    nextPage += 1;
+  } else {
+    nextPage = Number(button.dataset.page);
+  }
+
+  nextPage = Math.min(Math.max(1, nextPage), totalPages);
+  if (nextPage === currentPage) return;
+
+  currentPage = nextPage;
+  renderCatalog();
+  carsList.scrollIntoView({ behavior: "smooth", block: "start" });
+});
 
 async function initCarsPage() {
   const allowed = await (authApi?.ensureUserSession?.() ?? Promise.resolve(true));
   if (!allowed) return;
   loadCars();
-
-  window.addEventListener("cart-updated", () => {
-    renderCatalog();
-  });
-
-  window.addEventListener("storage", (event) => {
-    if (event.key === GUEST_CART_KEY) {
-      renderCatalog();
-    }
-  });
 }
 
 initCarsPage();

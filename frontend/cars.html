@@ -32,6 +32,24 @@
     <section class="container">
       <h1 class="page-title">Каталог</h1>
 
+      <section class="card catalog-search-card" aria-label="Поиск по каталогу">
+        <form
+          class="catalog-search-form"
+          data-catalog-search
+          role="search"
+          aria-label="Поиск по каталогу"
+        >
+          <label class="sr-only" for="catalog-search">Поиск по каталогу</label>
+          <input
+            id="catalog-search"
+            name="search"
+            type="search"
+            placeholder="Поиск по марке или модели"
+            autocomplete="off"
+          >
+        </form>
+      </section>
+
       <section class="card brand-filter" aria-labelledby="brand-filter-title">
         <div class="brand-filter-header">
           <div>
@@ -45,6 +63,12 @@
       </section>
 
       <section id="cars-list" class="cars-grid" aria-live="polite"></section>
+      <nav
+        id="catalog-pagination"
+        class="catalog-pagination"
+        aria-label="Навигация по страницам каталога"
+        hidden
+      ></nav>
     </section>
   </main>
 

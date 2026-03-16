@@ -16,6 +16,7 @@ const cartTotal = document.getElementById("cart-total");
 let currentCartItems = [];
 
 function setStatus(text, type = "") {
+  if (!status) return;
   status.textContent = text;
   status.className = type ? `status-line ${type}` : "status-line";
 }
@@ -96,6 +97,12 @@ function formatPrice(value) {
   return Number(value || 0).toLocaleString("ru-RU");
 }
 
+function setButtonDisabled(button, disabled) {
+  if (button) {
+    button.disabled = disabled;
+  }
+}
+
 function updateSummary(cars) {
   const total = cars.reduce((sum, car) => sum + Number(car.price || 0), 0);
   cartCount.textContent = String(cars.length);
@@ -107,7 +114,7 @@ function renderCart(cars) {
   updateSummary(cars);
 
   if (!cars.length) {
-    cartList.innerHTML = '<li class="cart-empty">Корзина пуста.</li>';
+    cartList.innerHTML = "";
     return;
   }
 
@@ -120,17 +127,16 @@ function renderCart(cars) {
         : '<div class="cart-item-thumb placeholder">Нет фото</div>';
 
       return `
-        <li class="cart-item-row" data-car-id="${car.car_id}">
+        <li class="cart-item-row">
           <div class="cart-item-main">
             ${imageTag}
             <div>
               <p class="cart-item-title">${title}</p>
-              <p class="cart-item-meta">ID: ${escapeHtml(car.car_id ?? "n/a")}</p>
             </div>
           </div>
           <div class="cart-item-actions">
             <p class="cart-item-price">${formatPrice(car.price)} ₽</p>
-            <button type="button" data-action="remove" data-car-id="${car.car_id}">Вернуть в каталог</button>
+            <button type="button" data-action="remove" data-car-id="${car.car_id}">Удалить из корзины</button>
           </div>
         </li>
       `;
@@ -140,14 +146,14 @@ function renderCart(cars) {
 
 async function loadCart() {
   const guestIds = getGuestCartIds();
-  refreshButton.disabled = true;
-  goToCarsButton.disabled = true;
+  setButtonDisabled(refreshButton, true);
+  setButtonDisabled(goToCarsButton, true);
   setStatus("Загрузка корзины...");
 
   try {
     if (!guestIds.length) {
       renderCart([]);
-      setStatus("Корзина пуста.", "success");
+      setStatus("");
       return;
     }
 
@@ -170,12 +176,12 @@ async function loadCart() {
       }));
 
     renderCart(items);
-    setStatus(`В корзине товаров: ${items.length}.`, "success");
+    setStatus("");
   } catch {
     setStatus("Нет соединения с backend.", "error");
   } finally {
-    refreshButton.disabled = false;
-    goToCarsButton.disabled = false;
+    setButtonDisabled(refreshButton, false);
+    setButtonDisabled(goToCarsButton, false);
   }
 }
 
@@ -184,19 +190,10 @@ async function buyAllCart() {
   clearGuestCart();
   renderCart([]);
   setStatus(hadItems ? "Корзина очищена." : "Корзина уже пуста.", "success");
-  window.dispatchEvent(new Event("cart-updated"));
 }
 
-function clearCart() {
-  const hadItems = currentCartItems.length > 0 || getGuestCartIds().length > 0;
-  clearGuestCart();
-  renderCart([]);
-  setStatus(hadItems ? "Корзина удалена и товары вернулись в каталог." : "Корзина уже пуста.", "success");
-  window.dispatchEvent(new Event("cart-updated"));
-}
-
-refreshButton.addEventListener("click", loadCart);
-goToCarsButton.addEventListener("click", () => {
+refreshButton?.addEventListener("click", loadCart);
+goToCarsButton?.addEventListener("click", () => {
   window.location.href = "/cars.html";
 });
 buyAllButton.addEventListener("click", async () => {
@@ -220,7 +217,7 @@ cartList.addEventListener("click", async (event) => {
     button.disabled = true;
     const removed = removeGuestCarId(carId);
     if (removed) {
-      setStatus("Машина удалена из корзины и возвращена в каталог.", "success");
+      setStatus("Машина удалена из корзины.", "success");
       window.dispatchEvent(new Event("cart-updated"));
       await loadCart();
     } else {
@@ -234,16 +231,6 @@ async function initCartPage() {
   const allowed = await (authApi?.ensureUserSession?.() ?? Promise.resolve(true));
   if (!allowed) return;
   loadCart();
-
-  window.addEventListener("cart-updated", () => {
-    loadCart();
-  });
-
-  window.addEventListener("storage", (event) => {
-    if (event.key === GUEST_CART_KEY) {
-      loadCart();
-    }
-  });
 }
 
 initCartPage();
